@@ -74,7 +74,25 @@
 .equ PCLK_PSYS_RATIO,  28
  
 .equ CLK_DIV0_VAL,      ((0<<APLL_RATIO)|(4<<A2M_RATIO)|(4<<HCLK_MSYS_RATIO)|(1<<PCLK_MSYS_RATIO)|(3<<HCLK_DSYS_RATIO)|(1<<PCLK_DSYS_RATIO)|(4<<HCLK_PSYS_RATIO)|(1<<PCLK_PSYS_RATIO))
- 
+
+/*For UART*/
+.equ GPA0CON_OFFSET,            0x000
+.equ GPA1CON_OFFSET,            0x020
+.equ UART_BASE,                 0XE2900000
+.equ UART0_OFFSET,              0x0000
+
+.equ ULCON_OFFSET,                  0x00
+.equ UCON_OFFSET,                   0x04
+.equ UFCON_OFFSET,                  0x08
+.equ UMCON_OFFSET,                  0x0C
+.equ UTXH_OFFSET,                   0x20
+.equ UBRDIV_OFFSET,                 0x28
+.equ UDIVSLOT_OFFSET,       0x2C
+.equ UART_UBRDIV_VAL,       34  
+.equ UART_UDIVSLOT_VAL,         0xDDDD
+
+.equ UART_CONSOLE_BASE, (UART_BASE + UART0_OFFSET)
+
  
 .equ I_Bit,      0x80 /* when I bit is set, IRQ is disabled*/
 .equ F_Bit,      0x40 /* when F bit is set, FIQ is disabled*/
@@ -340,7 +358,55 @@ dsb
 Finished_:
 mov pc, lr
  
- 
+uart_asm_init:
+        stmfd sp!,{lr}
+        /* set GPIO(GPA) to enable UART */
+        @ GPIO setting for UART
+        ldr     r0, =GPIO_BASE  @0xE0200000
+        ldr     r1, =0x22222222
+        str     r1, [r0,#GPA0CON_OFFSET]  @ storing 0010 in all reg fields, which configures PA0 for UART 0 and UART 1.
+
+        ldr     r0, =UART_CONSOLE_BASE
+
+        mov     r1, #0x0
+        str     r1, [r0,#UFCON_OFFSET] @ resetting all bits in UFCON0 register, disabling FIFO, which means the Tx/Rx buffers 
+                                       @ offer a single byte to hold transfer/receive data
+        str     r1, [r0,#UMCON_OFFSET] @ resetting all bits in UMCON0 register, disabling auto flow control (AFC), and setting 'Request to 
+                                            @ Send' bit to zero, which basically means that our UART0 module will tell the other side of the
+                                            @ communication line that we can never receive anything, however, it is up to the sender to respect
+                                            @ this, depending on it's configuration.
+
+        mov     r1, #0x3
+        str     r1, [r0,#ULCON_OFFSET]     @ setting bits [0:1] to 0b11, which means data packets are 8 bits long, standard stuff.
+
+        ldr     r1, =0x3c5                  @ (0011-1100-0101)
+        str     r1, [r0,#UCON_OFFSET]       @ Receive Mode: interrupt/polling mode, Transmit Mode: interrupt/polling mode,
+                                            @ Send Break Signal: No, Loop-back Mode: disabled, Rx Error Status Interrupt: Enable,
+                                            @ Rx Time Out: Enable,Rx Interrupt Type: level, Tx Interrupt Type: level.
+                                            @  Clock Selection: PCLK,dont care for the rest.
+
+        ldr     r1, =UART_UBRDIV_VAL   @ 34
+        str     r1, [r0,#UBRDIV_OFFSET]
+
+        ldr     r1, =UART_UDIVSLOT_VAL  @ 0xDDDD
+        str     r1, [r0,#UDIVSLOT_OFFSET]
+        
+	ldr     r0,=init_uart_string
+        mov     r1,#init_uart_len
+        bl      uart_print_string
+
+        ldmfd sp!,{pc}
+
+
+/*void uart_print_string(char* string, int size)*/
+uart_print_string:
+        ldr     r3, =UART_CONSOLE_BASE          @0xE29000000
+1:
+        str     r0,[r3,#UTXH_OFFSET]    
+        add     r0,r0,#4
+        subs    r1,r1,#1
+        bne     1b
+        mov     pc, lr 
  
 .align 4,0x90
 flash_led:
@@ -365,3 +431,29 @@ flash_led:
      orr r5,r5,r3  @ turn them all off again ...
      str r5,[r4]
      mov pc, lr
+
+
+.section .rodata
+init_uart_string:
+.ascii "UART 0 Initialization complete ...\r\n"
+.set init_uart_len,.-init_uart_string
+init_clock_string:
+.ascii "Clock System initialization complete ...\r\n"
+.set init_clock_len,.-init_clock_string
+init_sdram_string:
+.ascii "memory initialization complete ...\r\n"
+.set init_sdram_len,.-init_sdram_string
+copy_sdram_start_string:
+.ascii "copying code to dram started ...\r\n"
+.set copy_sdram_start_len,.-copy_sdram_start_string
+copy_sdram_end_string:
+.ascii "copying code to dram complete ...\r\n"
+.set copy_sdram_end_len,.-copy_sdram_end_string
+copy_sdram_err_string:
+.ascii "copying code to dram failed ...\r\n"
+.set copy_sdram_err_len,.-copy_sdram_err_string
+
+
+
+
+
