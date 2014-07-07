@@ -164,22 +164,24 @@ Reset_Handler:
  
         /*enable L2 cache, only works if the above is commented in ...*/
         @mrc p15, 0, r0, c1, c0, 1
-     @orr r0, r0, #(1<<1)
-     @mcr p15, 0, r0, c1, c0, 1
+        @orr r0, r0, #(1<<1)
+        @mcr p15, 0, r0, c1, c0, 1
       
  
- ldr sp, =0xd0037d80 /* SVC stack top, from irom documentation*/
- sub sp, sp, #12 /* set stack */
- @mov fp, #0
+        ldr sp, =0xd0037d80 /* SVC stack top, from irom documentation*/
+        sub sp, sp, #12 /* set stack */
+       @mov fp, #0
  
- ldr r0,=0x0C
- @bl flash_led
+        ldr r0,=0x0C
+        bl flash_led
  
- bl clock_subsys_init
- 
- ldr r0,=0x0F
- @bl flash_led
- b .
+        bl clock_subsys_init
+
+
+        ldr r0,=0x0F
+        bl flash_led
+        bl uart_asm_init
+ 	b .
  
  
 Undefined_Handler:
@@ -400,13 +402,19 @@ uart_asm_init:
 
 /*void uart_print_string(char* string, int size)*/
 uart_print_string:
-        ldr     r3, =UART_CONSOLE_BASE          @0xE29000000
+        stmfd sp!,{r2-r4,lr}
+        ldr     r2, =UART_CONSOLE_BASE          @0xE29000000
 1:
-        str     r0,[r3,#UTXH_OFFSET]    
-        add     r0,r0,#4
+        ldrb    r3,[r0],#1
+        mov     r4, #0x10000 @ delay
+2:      subs    r4, r4, #1
+        bne     2b
+        strb    r3,[r2,#UTXH_OFFSET]    
         subs    r1,r1,#1
         bne     1b
-        mov     pc, lr 
+        ldmfd sp!,{r2-r4, pc}
+
+
  
 .align 4,0x90
 flash_led:
@@ -452,8 +460,4 @@ copy_sdram_end_string:
 copy_sdram_err_string:
 .ascii "copying code to dram failed ...\r\n"
 .set copy_sdram_err_len,.-copy_sdram_err_string
-
-
-
-
 
