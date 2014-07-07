@@ -1,0 +1,11 @@
+This is a personal project I am working on for the purpose of demonstration,
+it is basically a car-dashboard built atop an ARM Cortex-A8 based development board.
+
+The focus of this project is on low level interfacing and software stack build up (u-boot and linux).
+The code progresses along side a blog series that I committed to finishing at:
+
+http://moazkorena.blogspot.com//search/label/EDC
+
+The progress of this series is governed the availability of free time, and a lot of the dicisions and choices
+taken in this code are sub-optimal, so if you think of copying any portion of this code, and use it in a production system,
+then be ready to deal with a high probability of crashing and burning, possibly killing living things.
