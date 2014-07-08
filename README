@@ -6,6 +6,5 @@ The code progresses along side a blog series that I committed to finishing at:
 
 http://moazkorena.blogspot.com//search/label/EDC
 
-The progress of this series is governed the availability of free time, and a lot of the dicisions and choices
-taken in this code are sub-optimal, so if you think of copying any portion of this code, and use it in a production system,
+The progress of this series is governed by the availability of free time, and a lot of the decisions and choices made in this code are sub-optimal, so if you think of copying any portion of this code, and using it in a production system,
 then be ready to deal with a high probability of crashing and burning, possibly killing living things.
