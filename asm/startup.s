@@ -133,7 +133,7 @@
 .equ MP1_7DRV_SR_OFFSET, 		0x4AC
 .equ MP1_8DRV_SR_OFFSET, 		0x4CC
 
-
+.equ ram_load_address,          0x20000000
  
 .equ I_Bit,      0x80 /* when I bit is set, IRQ is disabled*/
 .equ F_Bit,      0x40 /* when F bit is set, FIQ is disabled*/
@@ -218,12 +218,32 @@ Reset_Handler:
  
         bl clock_subsys_init
 
-
         ldr r0,=0x0F
         bl flash_led
         bl uart_asm_init
- 	b .
- 
+
+        ldr r0,=0x0C
+        bl flash_led
+
+        bl mem_ctrl_asm_init
+
+        ldr r0,=0x0F
+        bl flash_led
+
+        /* copy a block of code from read only memory to ram,
+         * and jump to execute it, the executed code should give a
+         * certain message if successful*/
+
+        bl      copy_To_Mem
+        ldr     r0,=0x0C  @ corrupt r0
+        ldr     ip,=ram_load_address
+        mov     lr, pc
+        bx      ip
+
+ _end:
+        bl      flash_led
+        b       _end
+
  
 Undefined_Handler:
         b .
@@ -455,7 +475,38 @@ uart_print_string:
         bne     1b
         ldmfd sp!,{r2-r4, pc}
 
+/*void uart_print_hex(uint32_t hexToPrint)*/
+uart_print_hex:
+	mov r1,r0
+	mov r2,#8
+loopLag:
+	mov	r1,r1,ror #28
+	and	r0,r1,#0x0000000F  @ mask
+	
+	cmp r0,#10
+	bge hexVal
+	add r0,r0,#0x30
+	bal printIt
+hexVal:
+	add r0,r0,#0x37
+printIt:
+	ldr	r3,=UART_CONSOLE_BASE 
+	strb    r0,[r3,#0x20]   @ This is the UTXH register, the transmit buffer.	
+        mov     r4, #0x10000 @ delay
+2:      subs    r4, r4, #1
+        bne     2b
 
+	sub	r2,r2,#1
+	cmp	r2,#0
+	bne	loopLag	
+	mov	r0,#0x0D
+        strb    r0,[r3,#0x20]
+        mov     r4, #0x10000 @ delay
+3:      subs    r4, r4, #1
+	bne     3b
+        mov     r0,#0x0A
+	strb	r0,[r3,#0x20]
+	mov	pc,lr
 
 mem_ctrl_asm_init:
 		stmfd sp!,{r4-r11, lr}
@@ -663,6 +714,42 @@ flash_led:
      str r5,[r4]
      mov pc, lr
 
+.align 4,0x90
+copy_To_Mem:
+        stmfd sp!,{r4-r11,lr}
+
+        ldr     r0,=copy_sdram_start_string
+        ldr     r1,=copy_sdram_start_len
+        bl      uart_print_string
+
+        ldr     r0,=_BL2
+        ldr     r1,=ram_load_address
+        mov     r2,#copy_lim
+1:      ldr     r3,[r0],#4
+        str     r3,[r1],#4
+        subs    r2,r2,#1
+        bne     1b
+	/*test the first and last words of the copied segment, if they match, assume successful*/
+	ldr	r0,=_BL2
+	ldr     r1,=ram_load_address
+	ldr	r2,[r1]  @ the contents of the ram load address.
+	cmp	r0,r2 @ This is test one, if not equal, go to exit_copy.
+	bl	uart_print_hex
+	ldr	r0,[r1]
+	bl	uart_print_hex
+	bne	exit_copy
+@	ldr	r0,[r0,#copy_lim]	
+@	ldr	r1,[r1,#copy_lim]
+@	cmp	r0,r1 @ This is test two, if not equal, go to exit_copy.
+        ldr     r0,=copy_sdram_end_string
+        ldr     r1,=copy_sdram_end_len
+        bl      uart_print_string
+	ldmfd sp!,{r4-r11,pc}
+exit_copy:
+        ldr   r0,=copy_sdram_err_string
+        ldr   r1,=copy_sdram_err_len
+        bl    uart_print_string
+        ldmfd sp!,{r4-r11,pc}
 
 .section .rodata
 init_uart_string:
@@ -684,3 +771,25 @@ copy_sdram_err_string:
 .ascii "copying code to dram failed ...\r\n"
 .set copy_sdram_err_len,.-copy_sdram_err_string
 
+
+.align 4,0x90
+_BL2:
+        ldr     r0,=exec_sdram_string
+        ldr     r1,=exec_sdram_len
+        ldr     r2, =0xE2900000
+1:
+        ldrb    r3,[r0],#1
+        mov     r4, #0x10000 @ delay
+2:      subs    r4, r4, #1
+        bne     2b
+        strb    r3,[r2,#0x20]   @ This is the UTXH register, the transmit buffer. 
+        subs    r1,r1,#1
+        bne     1b
+	
+        ldr     r0,=0xD   @ This is to get a unique LED pattern 
+        mov     pc,lr
+	
+exec_sdram_string:
+.ascii "code execution from dram successful! ...\r\n"
+.set exec_sdram_len,.-exec_sdram_string
+.set copy_lim,.-_BL2
