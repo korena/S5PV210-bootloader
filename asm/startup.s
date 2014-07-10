@@ -730,17 +730,16 @@ copy_To_Mem:
         subs    r2,r2,#1
         bne     1b
 	/*test the first and last words of the copied segment, if they match, assume successful*/
-	ldr	r0,=_BL2
+	
+	ldr	r3,=_BL2
+	ldr	r0,[r3]
 	ldr     r1,=ram_load_address
 	ldr	r2,[r1]  @ the contents of the ram load address.
 	cmp	r0,r2 @ This is test one, if not equal, go to exit_copy.
-	bl	uart_print_hex
-	ldr	r0,[r1]
-	bl	uart_print_hex
 	bne	exit_copy
-@	ldr	r0,[r0,#copy_lim]	
-@	ldr	r1,[r1,#copy_lim]
-@	cmp	r0,r1 @ This is test two, if not equal, go to exit_copy.
+	ldr	r0,[r3,#copy_lim]	
+	ldr	r4,[r1,#copy_lim]
+	cmp	r0,r4 @ This is test two, if not equal, go to exit_copy.
         ldr     r0,=copy_sdram_end_string
         ldr     r1,=copy_sdram_end_len
         bl      uart_print_string
@@ -749,6 +748,19 @@ exit_copy:
         ldr   r0,=copy_sdram_err_string
         ldr   r1,=copy_sdram_err_len
         bl    uart_print_string
+	ldr   r1,=_BL2
+	ldr   r0,[r1]
+	bl    uart_print_hex
+	ldr   r1,=ram_load_address
+	ldr   r0,[r1]
+	bl    uart_print_hex
+
+        ldr   r1,=_BL2
+        ldr   r0,[r1,#copy_lim]
+        bl    uart_print_hex
+        ldr   r1,=ram_load_address
+        ldr   r0,[r1,#copy_lim]
+        bl    uart_print_hex
         ldmfd sp!,{r4-r11,pc}
 
 .section .rodata
@@ -792,4 +804,5 @@ _BL2:
 exec_sdram_string:
 .ascii "code execution from dram successful! ...\r\n"
 .set exec_sdram_len,.-exec_sdram_string
+.align 4
 .set copy_lim,.-_BL2
