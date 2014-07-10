@@ -152,7 +152,6 @@ _start:
         b IRQ_Handler
 /*FIQ handler would go right here ...*/
  
-/*
 .globl _bss_start
 _bss_start:
  .word bss_start
@@ -168,7 +167,6 @@ _data_start:
 .globl _rodata
 _rodata:
  .word rodata
-*/
  
 Reset_Handler:
   
@@ -761,7 +759,7 @@ exit_copy:
         ldr   r1,=ram_load_address
         ldr   r0,[r1,#copy_lim]
         bl    uart_print_hex
-        ldmfd sp!,{r4-r11,pc}
+	b	.  @ loop forever upon failure ...
 
 .section .rodata
 init_uart_string:
