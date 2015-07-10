@@ -1,7 +1,7 @@
 # for home
-#CROSS_COMPILE	= /home/korena/Development/Compilers/gcc-arm-none-eabi-4_7-2013q1/bin/arm-none-eabi-
+CROSS_COMPILE	= /home/korena/Development/Tools/gcc-arm-none-eabi-4_8-2014q3/bin/arm-none-eabi-
 # for work
-CROSS_COMPILE	=arm-none-eabi-
+#CROSS_COMPILE	=arm-none-eabi-
 
 
 AS        = $(CROSS_COMPILE)as
@@ -117,5 +117,5 @@ dep:
 	gccmakedep $(OBJS_BL1:.o=.c) $(OBJS_BL1:.o=.s) $(OBJS_BL2:.o=.c) $(OBJS_BL2:.o=.s)
 
 clean:
-	rm -rf $(OBJS)  $(HOST_BIN_DIR)/*  $(TARGET_BIN_DIR)/*.bin $(TARGET_BIN_DIR)/*.elf $(TARGET_BIN_DIR)/*.boot $(TARGET_BIN_DIR)/*.o *.map *.o $(ASM_SRC_DIR)/*.o SRC_DIR/*.o $(BL2_ASM_DIR)/*.o $(BL2_ROOT_DIR)/*.map 
+	rm -rf $(OBJS) $(HOST_BIN_DIR)/*  $(TARGET_BIN_DIR)/*.bin $(TARGET_BIN_DIR)/*.elf $(TARGET_BIN_DIR)/*.boot $(TARGET_BIN_DIR)/*.o *.map *.o $(ASM_SRC_DIR)/*.o SRC_DIR/*.o $(BL2_ASM_DIR)/*.o $(BL2_ROOT_DIR)/*.map 
 
