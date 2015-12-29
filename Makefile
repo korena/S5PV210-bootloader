@@ -73,7 +73,8 @@ BL2_SRCs_ASM += $(wildcard $(BL2_ASM_DIR)/*.s)
 BL2_SRCs_C += $(wildcard $(BL2_C_SRC_DIR)/*.c)
 OBJS_BL2 = $(BL2_SRCs_ASM:.s=.o) $(BL2_SRCs_C:.c=.o)
 
-CFLAGS =  -Os -nostdlib
+CFLAGS =  -Os -nostdlib -march=armv7-a
+AFLAGS = -march=armv7-a
 CFLAGS_HOST = -Os -Wall
 
 all:  $(IMGMAKE) $(BL1_BIN).boot  $(BL1_BIN) $(BL2_BIN) 
