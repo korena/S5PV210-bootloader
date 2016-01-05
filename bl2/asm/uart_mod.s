@@ -115,7 +115,6 @@ printIt:
 	bne     3b
         mov     r0,#0x0A
 	strb	r0,[r3,#0x20]
-#	mov	pc,lr
         ldmfd sp!,{r0-r4, pc}
 
 

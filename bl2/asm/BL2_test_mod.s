@@ -24,7 +24,7 @@ _BL2:
         mov     pc,lr
 	
 exec_sdram_string:
-.ascii "code execution from dram successful! ...\r\n"
+.ascii "test code execution from dram successful! ...\r\n"
 .set exec_sdram_len,.-exec_sdram_string
 .align 4
 .set copy_lim,.-_BL2

@@ -40,11 +40,12 @@
 
 .equ GPIO_BASE,  0xE0200000
 
-
 .text
 .code 32
 .global copy_To_Mem
 .global mem_ctrl_asm_init
+.global copy_far_To_Mem
+
 
 mem_ctrl_asm_init:
 		stmfd sp!,{r4-r11, lr}
@@ -234,7 +235,6 @@ copy_To_Mem:
         ldr     r0,=copy_sdram_start_string
         ldr     r1,=copy_sdram_start_len
         bl      uart_print_string
-
         ldr     r0,=_BL2
         ldr     r1,=ram_load_address
         ldr     r2,=copy_lim
@@ -278,17 +278,22 @@ exit_copy:
 	b	.  @ loop forever upon failure ...
 
 
+@ param 1 is the MMC start address to copy from (in r0)
+@IMPORTAXT: the first word of BL2 should contain the length of the code to be copied
+@ if the length counts the first word, then an extra word will be copied at the end,
+@ since there's no checksum, this is a security risk, but who cares about security ?
+
 .section .rodata
 
 init_sdram_string:
 .ascii "memory initialization complete ...\r\n"
 .set init_sdram_len,.-init_sdram_string
 copy_sdram_start_string:
-.ascii "copying code to dram started ...\r\n"
+.ascii "test copying code to dram started ...\r\n"
 .set copy_sdram_start_len,.-copy_sdram_start_string
 copy_sdram_end_string:
-.ascii "copying code to dram complete ...\r\n"
+.ascii "test copying code to dram complete ...\r\n"
 .set copy_sdram_end_len,.-copy_sdram_end_string
 copy_sdram_err_string:
-.ascii "copying code to dram failed ...\r\n"
+.ascii "test copying code to dram failed ...\r\n"
 .set copy_sdram_err_len,.-copy_sdram_err_string

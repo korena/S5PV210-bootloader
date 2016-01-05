@@ -18,6 +18,7 @@
  
 
 .equ ram_load_address,          0x20000000
+
  
 .equ I_Bit,      0x80 /* when I bit is set, IRQ is disabled*/
 .equ F_Bit,      0x40 /* when F bit is set, FIQ is disabled*/
@@ -35,7 +36,11 @@ _start:
         nop /* Reserved vector*/
         b IRQ_Handler
 /*FIQ handler would go right here ...*/
- 
+
+
+
+/*after fast interrupt handler ...*/
+
 .globl _bss_start
 _bss_start:
  .word bss_start
@@ -98,42 +103,55 @@ Reset_Handler:
         ldr r0,=0x0C
         bl flash_led
  
-        bl clock_subsys_init
-
-        ldr r0,=0x0F
-        bl flash_led
         bl uart_asm_init
 
-        ldr r0,=0x0C
-        bl flash_led
-
-        bl mem_ctrl_asm_init
-
-        ldr r0,=0x0F
-        bl flash_led
-
-        /* copy a block of code from read only memory to ram,
-         * and jump to execute it, the executed code should give a
-         * certain message if successful*/
-
-        bl      copy_To_Mem
-        ldr     r0,=0x0C  @ corrupt r0
-        ldr     ip,=ram_load_address
-        mov     lr, pc
-        bx      ip
-
- _end:
+	mov r0,#0xF
         bl      flash_led
+
+/*At this point, bl1 should load bl2 and calculate 
+*the checksum for verification, then jump to execute it
+*a lot needs to be done at this point, which means we 
+* need to go for c ... as it would take less time to
+*initialize storage devices there ...
+*/
+
+
+
+
+	
+ _end:  
+	mov r0,#0xC
+        bl      flash_led
+
+	mov r1,#0x100000
+1:	subs r1,r1,#1
+	bne 1b
+	
+	mov r0,#0xF
+        bl      flash_led
+
+	mov r1,#0x100000
+2:	subs r1,r1,#1
+	bne 2b
         b       _end
 
  
 Undefined_Handler:
+        ldr     r0,=undefined_error_string
+        ldr     r1,=undefined_error_string_len
+        bl      uart_print_string
         b .
 SWI_Handler:
         b .
 Prefetch_Handler:
+        ldr     r0,=prefetch_handler_string
+        ldr     r1,=prefetch_handler_string_length
+        bl      uart_print_string
         b .
 Data_Handler:
+        ldr     r0,=data_handler_string
+        ldr     r1,=data_handler_string_length
+        bl      uart_print_string
         b .
 IRQ_Handler:  
         b . 
@@ -255,4 +273,22 @@ flash_led:
      orr r5,r5,r3  @ turn them all off again ...
      str r5,[r4]
      mov pc, lr
+
+
+
+.section .rodata
+
+undefined_error_string:
+.ascii "undefined behavior exception! ...\r\n"
+.set undefined_error_string_len,.-undefined_error_string
+data_handler_string:
+.ascii "data handler called ...\r\n"
+.set data_handler_string_length,.-data_handler_string
+prefetch_handler_string:
+.ascii "prefetch handler called ...\r\n"
+.set prefetch_handler_string_length,.-prefetch_handler_string
+
+
+
+
 .end
