@@ -104,14 +104,12 @@ int makeImage(uint32_t *checksum,uint32_t *length){
 		fwrite(&data, sizeof(uint32_t), 1, output);
 	}
 	printf("wrote BL1 data...\n");
-	
 	data = 0;
 	for (; actualLength < (BL1_LENGTH); actualLength += 4)
 	{
 		fwrite(&data, sizeof(uint32_t), 1, output);
 	}
 	printf("padding inserted ...\n");
-	
 if (input != NULL)	fclose(input);
 if (output != NULL)	fclose(output);
 	

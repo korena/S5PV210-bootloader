@@ -1,0 +1,89 @@
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+*default*        0x00000000         0xffffffff
+
+Linker script and memory map
+
+                0xd0020010                . = 0xd0020010
+                0xd0020010                . = ALIGN (0x4)
+
+.text           0xd0020010      0x408
+ */startup.o()
+ .text          0xd0020010      0x234 /home/korena/Development/Workspaces/car-dashboard/asm/startup.o
+                0xd0020010                _start
+                0xd002002c                _bss_start
+                0xd0020030                _bss_end
+                0xd0020034                _data_start
+                0xd0020038                _rodata
+ .data          0xd0020244        0x0 /home/korena/Development/Workspaces/car-dashboard/asm/startup.o
+ .bss           0xd0020244        0x0 /home/korena/Development/Workspaces/car-dashboard/asm/startup.o
+ .rodata        0xd0020244       0x1e /home/korena/Development/Workspaces/car-dashboard/asm/startup.o
+ .ARM.attributes
+                0xd0020262       0x1d /home/korena/Development/Workspaces/car-dashboard/asm/startup.o
+ .iplt          0x00000000        0x0 /home/korena/Development/Workspaces/car-dashboard/asm/startup.o
+ .rel.iplt      0x00000000        0x0 /home/korena/Development/Workspaces/car-dashboard/asm/startup.o
+ .igot.plt      0x00000000        0x0 /home/korena/Development/Workspaces/car-dashboard/asm/startup.o
+ *(.text)
+ *fill*         0xd002027f        0x1 
+ .text          0xd0020280      0x124 /home/korena/Development/Workspaces/car-dashboard/asm/uart_mod.o
+                0xd0020280                uart_asm_init
+                0xd00202d0                uart_print_string
+                0xd00202f8                uart_print_hex
+                0xd0020360                uart_print
+ .text          0xd00203a4       0x74 /home/korena/Development/Workspaces/car-dashboard/src/init_bl2.o
+                0xd00203a4                debug_print
+                0xd00203a8                copy_bl2_to_sram
+
+.glue_7         0xd0020418        0x0
+ .glue_7        0x00000000        0x0 linker stubs
+
+.glue_7t        0xd0020418        0x0
+ .glue_7t       0x00000000        0x0 linker stubs
+
+.vfp11_veneer   0xd0020418        0x0
+ .vfp11_veneer  0x00000000        0x0 linker stubs
+
+.v4_bx          0xd0020418        0x0
+ .v4_bx         0x00000000        0x0 linker stubs
+                0xd0020418                . = ALIGN (0x4)
+                0xd0020418                rodata = .
+
+.rodata         0xd0020418       0x23
+ *(.rodata)
+ .rodata        0xd0020418       0x23 /home/korena/Development/Workspaces/car-dashboard/asm/uart_mod.o
+
+.rodata.str1.1  0xd002043b       0x59
+ .rodata.str1.1
+                0xd002043b       0x59 /home/korena/Development/Workspaces/car-dashboard/src/init_bl2.o
+                0xd0020494                . = ALIGN (0x4)
+                0xd0020494                data_start = .
+
+.data           0xd0020494        0x0
+ *(.data)
+ .data          0xd0020494        0x0 /home/korena/Development/Workspaces/car-dashboard/asm/uart_mod.o
+ .data          0xd0020494        0x0 /home/korena/Development/Workspaces/car-dashboard/src/init_bl2.o
+                0xd0020494                . = ALIGN (0x4)
+                0xd0020494                bss_start = .
+
+.bss            0xd0020494        0x0
+ *(.bss)
+ .bss           0xd0020494        0x0 /home/korena/Development/Workspaces/car-dashboard/asm/uart_mod.o
+ .bss           0xd0020494        0x0 /home/korena/Development/Workspaces/car-dashboard/src/init_bl2.o
+                0xd0020494                bss_end = .
+LOAD /home/korena/Development/Workspaces/car-dashboard/asm/startup.o
+LOAD /home/korena/Development/Workspaces/car-dashboard/asm/uart_mod.o
+LOAD /home/korena/Development/Workspaces/car-dashboard/src/init_bl2.o
+OUTPUT(target_bin/BL1.elf elf32-littlearm)
+
+.ARM.attributes
+                0x00000000       0x2b
+ .ARM.attributes
+                0x00000000       0x1d /home/korena/Development/Workspaces/car-dashboard/asm/uart_mod.o
+ .ARM.attributes
+                0x0000001d       0x2f /home/korena/Development/Workspaces/car-dashboard/src/init_bl2.o
+
+.comment        0x00000000       0x70
+ .comment       0x00000000       0x70 /home/korena/Development/Workspaces/car-dashboard/src/init_bl2.o
+                                 0x71 (size before relaxing)

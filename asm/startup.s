@@ -16,9 +16,6 @@
 .equ GPJ2CONPDN_OFFSET,  0x290
 .equ GPJ2PUDPDN_OFFSET,  0x294
  
-
-.equ ram_load_address,          0x20000000
-
  
 .equ I_Bit,      0x80 /* when I bit is set, IRQ is disabled*/
 .equ F_Bit,      0x40 /* when F bit is set, FIQ is disabled*/
@@ -28,7 +25,8 @@
 .global _start
  
 _start:
-        b Reset_Handler
+
+ 	b Reset_Handler
         b Undefined_Handler
         b SWI_Handler
         b Prefetch_Handler
@@ -40,6 +38,8 @@ _start:
 
 
 /*after fast interrupt handler ...*/
+
+
 
 .globl _bss_start
 _bss_start:
@@ -56,9 +56,10 @@ _data_start:
 .globl _rodata
 _rodata:
  .word rodata
- 
+
+
 Reset_Handler:
-  
+ 
 /* set the cpu to SVC32 mode and disable IRQ & FIQ */
          msr CPSR_c, #Mode_SVC|I_Bit|F_Bit ;
        /* Disable Caches */
@@ -115,49 +116,26 @@ Reset_Handler:
 *initialize storage devices there ...
 */
 
+@ switching to basic C ...
 
+	bl 	copy_bl2_to_sram
+	ldr 	r0,=never_come_here_string	
+	bl	uart_print
+	b	. @loop forever
 
-
-	
- _end:  
-	mov r0,#0xC
-        bl      flash_led
-
-	mov r1,#0x100000
-1:	subs r1,r1,#1
-	bne 1b
-	
-	mov r0,#0xF
-        bl      flash_led
-
-	mov r1,#0x100000
-2:	subs r1,r1,#1
-	bne 2b
-        b       _end
-
- 
 Undefined_Handler:
-        ldr     r0,=undefined_error_string
-        ldr     r1,=undefined_error_string_len
-        bl      uart_print_string
         b .
 SWI_Handler:
         b .
 Prefetch_Handler:
-        ldr     r0,=prefetch_handler_string
-        ldr     r1,=prefetch_handler_string_length
-        bl      uart_print_string
         b .
 Data_Handler:
-        ldr     r0,=data_handler_string
-        ldr     r1,=data_handler_string_length
-        bl      uart_print_string
         b .
 IRQ_Handler:  
         b . 
-           
- 
- 
+
+
+
 /*==========================================
 * useful routines
 ============================================ */
@@ -250,7 +228,6 @@ Finished_:
          mov pc, lr
  
  
-.align 4,0x90
 flash_led:
      ldr r4,=(GPIO_BASE+GPJ2CON_OFFSET)
      ldr r5,[r4]
@@ -274,21 +251,8 @@ flash_led:
      str r5,[r4]
      mov pc, lr
 
-
-
 .section .rodata
-
-undefined_error_string:
-.ascii "undefined behavior exception! ...\r\n"
-.set undefined_error_string_len,.-undefined_error_string
-data_handler_string:
-.ascii "data handler called ...\r\n"
-.set data_handler_string_length,.-data_handler_string
-prefetch_handler_string:
-.ascii "prefetch handler called ...\r\n"
-.set prefetch_handler_string_length,.-prefetch_handler_string
-
-
-
+never_come_here_string:
+.ascii "you should never see this ...\n"
 
 .end

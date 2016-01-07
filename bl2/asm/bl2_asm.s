@@ -5,7 +5,8 @@
 .equ ram_load_address,          0x20000000
 
 _bl2_entry:
-
+	ldr	r0,=starting_bl2_string 
+	bl	uart_print
 
         bl clock_subsys_init
 
@@ -21,18 +22,9 @@ _bl2_entry:
         mov     lr, pc
         bx      ip
 
-uart_print_string:  @ yup, another definition, cause I can.
-        stmfd sp!,{r2-r4,lr}
-        ldr     r2, =0xE2900000
-1:
-        ldrb    r3,[r0],#1
-        mov     r4, #0x10000 @ delay
-2:      subs    r4, r4, #1
-        bne     2b
-        strb    r3,[r2,#0x20]    
-        subs    r1,r1,#1
-        bne     1b
-        ldmfd sp!,{r2-r4, pc}
 
 
-
+.section .rodata
+starting_bl2_string:
+.ascii "bl2 executing ...\n"
+.align 4

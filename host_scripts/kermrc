@@ -3,6 +3,7 @@ set speed 115200
 set carrier-watch off
 set handshake none
 set flow-control none
+set TERMINAL CR-DISPLAY CRLF
 robust
 set file type bin
 set file name lit

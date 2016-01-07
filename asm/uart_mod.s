@@ -18,10 +18,14 @@
 .equ UART_CONSOLE_BASE, (UART_BASE + UART0_OFFSET)
 
 
+
+.equ TERM, 0x00
+
 .text
 .code 32
 
 .global uart_asm_init
+.global uart_print
 .global uart_print_hex
 .global uart_print_string
 
@@ -63,14 +67,13 @@ uart_asm_init:
         mov     r1,#init_uart_len
         bl      uart_print_string
 
-        ldmfd sp!,{pc}
+        ldmia sp!,{pc}
 
 
 /*void uart_print_string(char* string, int size)*/
 
-.align 4,0x90
 uart_print_string:
-        stmfd sp!,{r2-r4,lr}
+        stmfd sp!,{r0-r4,lr}
         ldr     r2, =UART_CONSOLE_BASE          @0xE29000000
 1:
         ldrb    r3,[r0],#1
@@ -80,10 +83,9 @@ uart_print_string:
         strb    r3,[r2,#UTXH_OFFSET]    
         subs    r1,r1,#1
         bne     1b
-        ldmfd sp!,{r2-r4, pc}
+        ldmia sp!,{r0-r4, pc}
 
 /*void uart_print_hex(uint32_t hexToPrint)*/
-.align 4,0x90
 uart_print_hex:
         stmfd sp!,{r0-r4,lr}
 	mov r1,r0
@@ -116,10 +118,24 @@ printIt:
         mov     r0,#0x0A
 	strb	r0,[r3,#0x20]
 #	mov	pc,lr
-        ldmfd sp!,{r0-r4, pc}
+        ldmia sp!,{r0-r4, pc}
 
+uart_print:
+	stmfd sp!,{r0-r4, lr}
+        ldr     r2, =UART_CONSOLE_BASE          @0xE29000000
+1:
+        ldrb    r3,[r0],#1
+	cmp	r3,#TERM
+	beq	done
+        mov     r4, #0x10000 @ delay
+2:      subs    r4, r4, #1
+        bne     2b
+        strb    r3,[r2,#UTXH_OFFSET]    
+        b       1b
+done:
+        ldmia sp!,{r0-r4, pc}
 
 .section .rodata
 init_uart_string:
-.ascii "UART 0 Initialization complete ...\r\n"
+.ascii "UART 0 Initialization complete ...\n"
 .set init_uart_len,.-init_uart_string

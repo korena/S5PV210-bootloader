@@ -47,7 +47,7 @@ MINOR := 00
 
 
 IMGMAKE  =$(HOST_BIN_DIR)/imageMaker
-IMGMAKEBL2 = $(HOST_TOOLS_DIR)/bl2ImageMaker
+IMGMAKEBL2 = $(HOST_BIN_DIR)/bl2ImageMaker
 BL1_BIN  = target_bin/BL1.bin
 BL1_ELF  = target_bin/BL1.elf
 BL1_LDS   = linker.lds

@@ -3,7 +3,7 @@ OUTPUT_ARCH(arm)
 ENTRY(_bl2_entry)
 SECTIONS
 {
- . = 0xd0020010;
+ . = 0xD0020FB0;
  . = ALIGN(4);
         .text : {
         */BL2.bin

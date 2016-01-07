@@ -286,14 +286,14 @@ exit_copy:
 .section .rodata
 
 init_sdram_string:
-.ascii "memory initialization complete ...\r\n"
+.ascii "memory initialization complete ...\n"
 .set init_sdram_len,.-init_sdram_string
 copy_sdram_start_string:
-.ascii "test copying code to dram started ...\r\n"
+.ascii "test copying code to dram started ...\n"
 .set copy_sdram_start_len,.-copy_sdram_start_string
 copy_sdram_end_string:
-.ascii "test copying code to dram complete ...\r\n"
+.ascii "test copying code to dram complete ...\n"
 .set copy_sdram_end_len,.-copy_sdram_end_string
 copy_sdram_err_string:
-.ascii "test copying code to dram failed ...\r\n"
+.ascii "test copying code to dram failed ...\n"
 .set copy_sdram_err_len,.-copy_sdram_err_string
