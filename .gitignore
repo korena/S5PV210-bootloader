@@ -1,0 +1,7 @@
+*~
+*.o
+*.swp
+*.map
+**/doc/*
+**/host_bin/*
+**/target_bin/*
