@@ -1,0 +1,39 @@
+#!/usr/local/bin/kermit +
+#
+# l o g p o r t
+#
+# Logs incoming material from a serial port.
+# Typical uses: Logging PBX call records, logging messages from a
+# router control port, etc.
+#
+# Usage: logport [ logfilename ]
+#
+# F. da Cruz, Columbia University, 17 Apr 2004
+#
+.port := /dev/ttyUSB0            # Serial port to use (change as needed)
+if >= \v(argc) 2 {             # Take log file name from command line
+    .file := \fcontents(\%1)   # Eval one level deep in case of backslashes
+} else while not def file {    # Prompt for it if not given
+    ask file " Log file name: "
+}
+if not writeable \m(file) {    # Check write access to the log file
+    exit 1 "\m(file): Not writeable"
+}
+set modem type none            # No modem is involved
+set port /dev/ttyUSB0            # Or whatever port you are using
+if fail {                      # Check that port was obtained
+    exit 1 \m(port): \v(setlinemsg)
+}
+set speed 115200                 # Or whatever speed is needed
+set flow rts/cts               # Or Xon/Xoff, or None
+set parity none                # Or Even, Mark, Space, or Odd as needed
+set carrier-watch off        # Uncomment if there is no Carrier signal
+set session-log text           # (or binary, or timestamped-text, etc)
+log session \m(file)           # Start the session log
+if fail exit 1                 # Make sure log was opened
+input /nomatch 23:59:59        # Log until midnight (requires 8.0.211)
+if fail {                      # Catch i/o errors
+    exit 1 "\m(port): I/O error"
+}
+close session                  # Close the log
+exit 0
