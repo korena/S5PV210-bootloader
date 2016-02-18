@@ -142,23 +142,5 @@ void processBits(void)
 		if(bits[i] != 255)
 			hexResult |= (1 << bits[i]);		
 	}
-
-		printf("Mask: %#0*x\n",(maskSize/4+2),hexResult);
-//		switch(maskSize){
-//			case 8:
-//		printf("Mask: %#0*x\n",4,hexResult);
-//		break;
-//			case 16:
-//		printf("Mask: %#0*x\n",6,hexResult);
-//		break;
-//			case 24:
-//		printf("Mask: %#0*x\n",8,hexResult);
-//		break;
-//			case 32:
-//		printf("Mask: %#0*x\n",10,hexResult);
-//		break;
-//			case 64:
-//		printf("Mask: %#0*x\n",18,hexResult);
-//		break;
-//		}
+	printf("Mask: %#0*x\n",(maskSize/4+2),hexResult);
 }
