@@ -222,29 +222,80 @@ setup_tags(uint32_t *parameters)
     setup_cmdline_tag("root=/dev/ram0");    /* commandline setting root device */
     setup_end_tag();                    /* end of tags */
 }
-
-#define PRNSTS0 0xEB000024   // present state register sd controller ..
+// present state register defines
+#define PRNSTS0 0xEB000024   // present state register sd controller
+#define BFRDRDY_BIT_MASK 0x00000800 // status bit for data ready for reading in buffer
+#define RDTRANACT_BIT_MASK 0x00000200 // status bit for read transfer active 
+#define DATLINEACT_BIT_MASK 0x00000004 // one of the data lines is being used
+#define CMDINHDAT_BIT_MASK 0x00000002  // dat line in use or not
+#define CMDINHCMD_BIT_MASK 0x00000001 // if 0, you can proceed with a new command
+// block size register
+#define BLKSIZE0 0xEB000004
+#define BLKSIZE_BITS_MASK 0x00000fff
+// block count register
+#define BLKCNT0 0xEB000006
+#define BLKCNT_BITS_MASK 0x0000ffff
+// transfer mode register
+#define TRNMOD0 0xEB00000C
+#define MUL1SIN0 0x00000020 // set to one for multiple block tranfer, before issuing cmd
+#define RD1WT0 0x00000010  // set to one for card to host controller DAT transfer direction
+#define ENBLKCNT 0x00000002 // set to one for multiple block transfer
+// command argument register
 #define ARGUMENT0 0xEB000008
+// command register defines
 #define CMDREG0 0xEB00000E
-#define CMD_BIT_MASK 0x00000001 
-#define DAT_BITS_MASK 0x00F00000 
-
-static void load_image(uint32_t *dest_address,uint32_t size_in_bytes){
+#define CMDIDX_BITS_MASK (uint32_t) 0x00003f00
+#define CMDTYP_BITS_MASK (uint32_t) 0x000000c0
+#define DATAPRNT_BIT_MASK (uint32_t) 0x00000020 
+#define ENCMDIDX_BIT_MASK (uint32_t) 0x00000010
+#define MDCRC_BIT_MASK (uint32_t) 0x00000008 
+#define RSPTYP_BITS_MASK (uint32_t) 0x00000003
+// values for read (cmd18)
+#define CMD_READ_MULTIPLE_BLOCK (uint32_t) 18
+#define CMD_SET_BLOCK_COUNT (uint32_t) 23
+#define RSPTYP_R1 (uint32_t) 0x2
+static void load_image(uint32_t block_start_addr uint32_t *dest_addr,uint32_t num_of_blocks){
         uint32_t ret = 0;	
+	uint32_t valued = 0;
 //	uart_print_address_contents((uint32_t*)0xEB00002C);// CLKCON0
 //	uart_print_address_contents((uint32_t*)(PRNSTS0)) ; // HOSTCTL0
 
-	while((*(uint32_t*)(PRNSTS0)) & CMD_BIT_MASK != CMD_BIT_MASK){
+	while((*(uint32_t*)(PRNSTS0)) & CMDINHCMD_BIT_MASK != CMD_BIT_MASK){
 		debug_print("waiting for CMD bit to clear .... \n\r\0");
 	}
-	while((*(uint32_t*)(PRNSTS0)) & DAT_BIT_MASK != DAT_BIT_MASK){
+	while((*(uint32_t*)(PRNSTS0)) & CMDINHDAT_BIT_MASK != DAT_BIT_MASK){
 		// needed ???
 		debug_print("waiting for busy lines to clear.... \n\r\0");
 	}
-//########################## untested code 
+//########################## untested code (following figure 7-9,7-10,7-11 of SoC user manual) 
+// set block size (not sure needed)
+	*((uint32_t*)BLKSIZE0) = 512; //TODO: read the contents of this register and see if this thing works
+// set block count register
+	*((uint32_t*)BLKCNT0) = num_of_blocks;
+//set the multiple blocks bit in transfer mode register
+	*((uint32_t*)TRNMOD0) |= MUL1SIN0;
+// set data transfer direction from sd card to host controller
+	*((uint32_t*)TRNMOD0) |= RD1WT0;
+// enable block count for multiple block tranfer
+	*((uint32_t*)TRNMOD0) |= ENBLKCNT;
+//put the number of blocks argument in the arguments register
+	*((uint32_t*)ARGUMENT0) = num_of_blocks; 
+// put cmd23 in CMDIDX [13:8]
+	*((uint32_t *)CMDREG0) |= (CMDIDX_BITS_MASK & (CMD_SET_BLOCK_COUNT << 8));	
+//TODO: continue command complete sequence (figure 7-10)
 
 
 
+// put first block address in argument register
+	*((uint32_t*)ARGUMENT0) = block_start_addr; 
+// put cmd18 in CMDIDX [13:8] 
+	*((uint32_t *)CMDREG0) |= (CMDIDX_BITS_MASK & (CMD_READ_MULTIPLE_BLOCK << 8));		
+// put 0b00 in CMDTYP [7:6] 
+	*((uint32_t*)CMDREG0)  |= (CMDTYP_BITS_MASK & (0b00 << 6));
+// set ENCMDIDX[4] and MDCRC[3] bits
+	*((uint32_t*)CMDREG0) |= (ENCMDIDX_BIT_MASK|MDCRC_BIT_MASK);
+// set RSPTYP bits [1:0]
+	*((uint32_t*)CMDREG0) |= (RSPTYP_BITS_MASK & (RSPTYP_R1));
 //######################### end of untested code	
 
 
@@ -278,8 +329,6 @@ start_linux(void)
     debug_print("setting up ATAGS ...\n\r\0");
 
     setup_tags(parm_at);                    /* sets up parameters */
-
-    //TODO: you should place the atags_list at param_at !! How else would you expect them to be there !?
 
     machine_type = 2456;	              /* get machine type */
 
