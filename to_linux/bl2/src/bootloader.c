@@ -237,12 +237,12 @@ setup_tags(uint32_t *parameters)
 #define BLKCNT_BITS_MASK 0x0000ffff
 // transfer mode register
 #define TRNMOD0 0xEB00000C
-#define MUL1SIN0 0x00000020 // set to one for multiple block tranfer, before issuing cmd
-#define RD1WT0 0x00000010  // set to one for card to host controller DAT transfer direction
-#define ENBLKCNT 0x00000002 // set to one for multiple block transfer
+#define MUL1SIN0_BIT_MASK 0x00000020 // set to one for multiple block tranfer, before issuing cmd
+#define RD1WT0_BIT_MASK 0x00000010  // set to one for card to host controller DAT transfer direction
+#define ENBLKCNT_BIT_MASK 0x00000002 // set to one for multiple block transfer
 // command argument register
 #define ARGUMENT0 0xEB000008
-// command register defines
+// command register
 #define CMDREG0 0xEB00000E
 #define CMDIDX_BITS_MASK (uint32_t) 0x00003f00
 #define CMDTYP_BITS_MASK (uint32_t) 0x000000c0
@@ -250,42 +250,87 @@ setup_tags(uint32_t *parameters)
 #define ENCMDIDX_BIT_MASK (uint32_t) 0x00000010
 #define MDCRC_BIT_MASK (uint32_t) 0x00000008 
 #define RSPTYP_BITS_MASK (uint32_t) 0x00000003
+// normal interrupt status register
+#define NOTINTSTS0 0xEB000030
+#define STACMDCMPLT_BIT_MASK 0x01 // command complete status bit 
+#define STATRANCMPLT_BIT_MASK 0x00000002 // transfer complete status bit
+// response register
+#define RSPREG0_0 0xEB000010
+#define RESPONSE_R1_MASK 0xffffffff // maps to the entire RSPREG0_0 register
+#define RSPREG0_1 0xEB000014
+#define RSPREG0_3 0xEB000018
+#define RSPREG0_4 0xEB00001C
+
 // values for read (cmd18)
 #define CMD_READ_MULTIPLE_BLOCK (uint32_t) 18
 #define CMD_SET_BLOCK_COUNT (uint32_t) 23
 #define RSPTYP_R1 (uint32_t) 0x2
-static void load_image(uint32_t block_start_addr uint32_t *dest_addr,uint32_t num_of_blocks){
+static void load_image(uint32_t block_start_addr, uint32_t *dest_addr,uint16_t num_of_blocks){
         uint32_t ret = 0;	
 	uint32_t valued = 0;
+	uint32_t R1=0;
 //	uart_print_address_contents((uint32_t*)0xEB00002C);// CLKCON0
 //	uart_print_address_contents((uint32_t*)(PRNSTS0)) ; // HOSTCTL0
 
-	while((*(uint32_t*)(PRNSTS0)) & CMDINHCMD_BIT_MASK != CMD_BIT_MASK){
+//########################## untested code (following figure 7-9,7-10,7-11 of SoC user manual) 
+// set block size (not sure needed)
+	*((uint32_t*)BLKSIZE0) |= BLKSIZE_BITS_MASK &(512 << 0); 
+//NOTE:paranoid test passed.	
+// set block count register
+//	*((uint16_t*)BLKCNT0) = num_of_blocks;
+//	debug_print("set block count register\n\r\0");
+//set the multiple blocks bit in transfer mode register
+//	*((uint32_t*)TRNMOD0) |= MUL1SIN0_BIT_MASK;
+//	debug_print("set multiple blocks bit in transfer mode register\n\r\0");
+// set data transfer direction from sd card to host controller
+//	*((uint32_t*)TRNMOD0) |= RD1WT0_BIT_MASK;
+//	debug_print("set transfer direction in transfer mode register\n\r\0");
+// enable block count for multiple block tranfer
+//	*((uint32_t*)TRNMOD0) |= ENBLKCNT_BIT_MASK;
+//	debug_print("enabled block count for multiple block tranfer in transfer mode register\n\r\0");
+//put the number of blocks argument in the arguments register
+	*((uint32_t*)ARGUMENT0) = num_of_blocks; 
+	debug_print("set the number of blocks in the command argument register\n\r\0");
+	uart_print_address_contents((uint32_t*)ARGUMENT0);
+
+	while((*(uint32_t*)(PRNSTS0)) & CMDINHCMD_BIT_MASK == CMDINHCMD_BIT_MASK){
 		debug_print("waiting for CMD bit to clear .... \n\r\0");
 	}
-	while((*(uint32_t*)(PRNSTS0)) & CMDINHDAT_BIT_MASK != DAT_BIT_MASK){
+	while((*(uint32_t*)(PRNSTS0)) & CMDINHDAT_BIT_MASK == CMDINHDAT_BIT_MASK){
 		// needed ???
 		debug_print("waiting for busy lines to clear.... \n\r\0");
 	}
-//########################## untested code (following figure 7-9,7-10,7-11 of SoC user manual) 
-// set block size (not sure needed)
-	*((uint32_t*)BLKSIZE0) = 512; //TODO: read the contents of this register and see if this thing works
-// set block count register
-	*((uint32_t*)BLKCNT0) = num_of_blocks;
-//set the multiple blocks bit in transfer mode register
-	*((uint32_t*)TRNMOD0) |= MUL1SIN0;
-// set data transfer direction from sd card to host controller
-	*((uint32_t*)TRNMOD0) |= RD1WT0;
-// enable block count for multiple block tranfer
-	*((uint32_t*)TRNMOD0) |= ENBLKCNT;
-//put the number of blocks argument in the arguments register
-	*((uint32_t*)ARGUMENT0) = num_of_blocks; 
+	debug_print("contents of command argument register 0: \n\r\0");
+	uart_print_address_contents((uint32_t*)0xEB10000E);
+	while(1);
+
+
+
+
+
+
+
+
+// put 0b00 in CMDTYP [7:6] 
+	*((uint32_t*)CMDREG0)  |= CMDTYP_BITS_MASK & (0b00 << 6);
+	debug_print("set command type bits to 0b00\n\r\0");
+	uart_print_address_contents((uint32_t*)CMDREG0);
 // put cmd23 in CMDIDX [13:8]
-	*((uint32_t *)CMDREG0) |= (CMDIDX_BITS_MASK & (CMD_SET_BLOCK_COUNT << 8));	
-//TODO: continue command complete sequence (figure 7-10)
-
-
-
+	*((uint32_t *)CMDREG0) |= CMDIDX_BITS_MASK & (CMD_SET_BLOCK_COUNT << 8);	
+	debug_print("set the command CMD23 in CMDIDX bits\n\r\0");
+// wait for command complete 
+	debug_print("going into while loop to wait for command complete\n\r\0");
+	uart_print_address_contents((uint32_t*)NOTINTSTS0);
+	while((*(uint32_t*)(NOTINTSTS0)) & STACMDCMPLT_BIT_MASK != STACMDCMPLT_BIT_MASK){
+		debug_print("waiting for command complete .... \n\r\0");
+	}
+// clear command complete status
+	*(uint32_t*)NOTINTSTS0 &= ~(STACMDCMPLT_BIT_MASK);	
+// read R1 response// TODO: test response register containing stuff ...
+	R1 = *(uint32_t*)RSPREG0_0;	
+	debug_print("contents of R1: \n\r\0");
+	uart_print_address_contents(&R1);
+	while(1);
 // put first block address in argument register
 	*((uint32_t*)ARGUMENT0) = block_start_addr; 
 // put cmd18 in CMDIDX [13:8] 
@@ -299,12 +344,17 @@ static void load_image(uint32_t block_start_addr uint32_t *dest_addr,uint32_t nu
 //######################### end of untested code	
 
 
-	if(ret == 1){
+	if(ret ==1){
 		debug_print("copying successful ...\n\r\0");
 	}else{
 		debug_print("copying failed :-(\n\r\0");
 	}
 }
+
+
+#define ZIMAGE_BLOCKS_NUMBER (0x172360/0x200+1)   // length in bytes divided by block size plus one for fear.
+#define ZIMAGE_SDMMC_START_ADDR (512*160-1)  // this is where I put it in make fuse step.
+
 int
 start_linux(void)
 {
@@ -316,7 +366,9 @@ start_linux(void)
 
     debug_print("about to copy linux image ...\n\r\0");
 
-    load_image((uint32_t*) ZIMAGE_LOAD_ADDRESS, ZIMAGE_LOAD_END_ADDRESS);    /* copy image into RAM */
+    load_image((uint32_t)ZIMAGE_SDMMC_START_ADDR,
+		    (uint32_t*) ZIMAGE_LOAD_ADDRESS,
+		    (uint16_t) ZIMAGE_BLOCKS_NUMBER);    /* copy image into RAM */
 
     debug_print("done copying linux image ...\n\r\0");
 

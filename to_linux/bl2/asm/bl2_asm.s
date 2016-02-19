@@ -12,7 +12,25 @@ _bl2_entry:
 
         bl 	mem_ctrl_asm_init
 
-	bl 	start_linux 
+
+@ wierd problem testing ...
+@ the processor doesn't seem to be capable of
+@ accessing the following range of addresses,
+@ this could be an execution mode thingy (some sort of security feature), or
+@ some hardware issue (unlikely)
+	ldr r1,=0xEB000006
+	ldr r0,[r1]
+	bl uart_print_hex 
+	ldr r1,=0xEB00000C
+	ldr r0,[r1]
+	bl uart_print_hex 
+	ldr r1,=0xEB00000E
+	ldr r0,[r1]
+	bl uart_print_hex 
+
+
+	b    .
+@	b 	start_linux 
 
         /* Memory test: copy a block of code from read only memory to ram,
          * and jump to execute it, the executed code should give a
