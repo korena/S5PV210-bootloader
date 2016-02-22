@@ -126,6 +126,7 @@ char * because_ive_had_it_with_gcc_linker_strcpy(char *strDest, const char *strS
 	   // assert(strDest!=NULL && strSrc!=NULL);  // NO.
 	    char *temp = strDest;
 	    while(*strDest++ = *strSrc++); // or while((*strDest++=*strSrc++) != '\0');
+//	    debug_print(temp);
 	    return temp;
 }
 
@@ -229,38 +230,40 @@ typedef uint32_t (*copy_mmc_to_mem)(uint32_t  channel, uint32_t  start_block, ui
 static uint32_t load_image(uint32_t block_start, uint32_t* load_address,uint16_t num_of_blocks){
 	copy_mmc_to_mem copy_func = (copy_mmc_to_mem) (*(uint32_t *) 0xD0037F98); //SdMccCopyToMem function from iROM documentation
 	uint32_t ret = copy_func(0,block_start, num_of_blocks,load_address, 0);
-	if(ret == 1){
-		debug_print("Copying function successful...\n\r\0");
-	}else{
+	if(ret == 0){
 		debug_print("Copying failed :-(\n\r\0");
 	}
 	return ret;
 }
 
 
-#define ZIMAGE_BLOCKS_NUMBER (0x172360/0x200+1)   // length in bytes divided by block size plus one for fear.
+#define ZIMAGE_BLOCKS_NUMBER (0x14D2F8/0x200+1)   // length in bytes divided by block size plus one for fear.
 #define ZIMAGE_SDMMC_START_ADDR (512*160-1)  // this is where I put it in make fuse step.
 #define ZIMAGE_START_BLOCK_NUMBER 160   // the 160th block in MMC storage memory 
 int
 start_linux(void)
 {
     void (*theKernel)(uint32_t zero, uint32_t arch, uint32_t *params);
-    uint32_t i = 0;
+    uint32_t i = 0, j = 0;
     uint32_t *exec_at = (uint32_t *) ZIMAGE_LOAD_ADDRESS;
+    uint32_t *dest_addr = exec_at;
     uint32_t *parm_at = (uint32_t *) DRAM_BASE + 0x100 ;  // 256 bytes away from the base address of DRAM
     uint32_t machine_type;
 
     debug_print("about to copy linux image ...\n\r\0");
 
-    load_image((uint32_t)ZIMAGE_START_BLOCK_NUMBER,
-		    exec_at,
-		    (uint16_t) 8);    /* copy image into RAM */
-    //TODO: it looks like 8 blocks is the maximum I could get, I have no idea why,
-    // and I'm not planning to find our, copying 9 blocks at once produces some
-    // consistent garbage in the exec_at address, this is observed by printing 
-    // the contents of that address. So I'm going to call that iROM copy function
-    // 20 times to copy the whole zImage, then jump to execute it. 
-
+    for(i=0;i<10;i++){
+	    if(i==8){
+		    for(j=0;j<1000;j++)
+	    		asm("nop");
+	    }
+   	load_image((uint32_t)ZIMAGE_START_BLOCK_NUMBER+i,(uint32_t*)exec_at+i*128,(uint16_t)1);    /* copy image into RAM */
+	debug_print("#");
+    }
+ //   for(i=0;i<371;i++){// one page at a time(4kib) ...
+ //          load_image((uint32_t)ZIMAGE_START_BLOCK_NUMBER+i*8,exec_at+(1024*i),(uint16_t)8);    /* copy image into RAM */
+//	   debug_print("#");
+//    }
     debug_print("done copying linux image ...\n\r\0");
 
 //    debug_print("about to copy ramdisk image ...");
@@ -273,21 +276,36 @@ start_linux(void)
 
     setup_tags(parm_at);                    /* sets up parameters */
 
-    machine_type = 2456;	              /* get machine type */
+    machine_type = 3466;	              /* get machine type */
 
     theKernel = (void (*)(uint32_t, uint32_t, uint32_t*))exec_at; /* set the kernel address */
-
-    
-    for(i;i<5;i++){
-	    uart_print_address_contents((uint32_t*)(exec_at+i));
-    }
-
-    debug_print("jumping to the kernel ... brace yourself!\n\r\0");
-   
-    // TODO: for debuggin, read the address at exec_at, and see if it contains the first instruciton of the zImage
-
-// while(1);
+			debug_print("first block start: \n\r\0");
+			uart_print_address_contents(dest_addr);
+			dest_addr += 127;
+			debug_print("first block end: \n\r\0");
+			uart_print_address_contents(dest_addr);
+			dest_addr += 1;
+			debug_print("second block start: \n\r\0");
+			uart_print_address_contents(dest_addr);
+			dest_addr += 127;
+			debug_print("second block end: \n\r\0");
+			uart_print_address_contents(dest_addr);
+			dest_addr += 1;
+			debug_print("third block start: \n\r\0");
+			uart_print_address_contents(dest_addr);
+			dest_addr += 127;
+			debug_print("third block end: \n\r\0");
+			uart_print_address_contents(dest_addr);
+			dest_addr += 1;
+			debug_print("fourth block start: \n\r\0");
+			uart_print_address_contents(dest_addr);
+			dest_addr += 127;
+			debug_print("fourth block end: \n\r\0");
+			uart_print_address_contents(dest_addr);
+     
+			debug_print("jumping to the kernel ... brace yourself!\n\r\0");
+ 
      theKernel(0, machine_type, parm_at);    /* jump to kernel with register set */
-
+	
     return 0;
 }
