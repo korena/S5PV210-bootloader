@@ -87,15 +87,15 @@ Reset_Handler:
         bl invalidate_unified_dcache_all
  
         /*enable L1 cache*/
-        @mrc     p15, 0, r1, c1, c0, 0 /* Read Control Register configuration data*/
-        @orr     r1, r1, #(0x1 << 12)  /* enable I Cache*/
-        @orr     r1, r1, #(0x1 << 2)   /* enable D Cache*/
-        @mcr     p15, 0, r1, c1, c0, 0 /* Write Control Register configuration data*/
+        mrc     p15, 0, r1, c1, c0, 0 /* Read Control Register configuration data*/
+        orr     r1, r1, #(0x1 << 12)  /* enable I Cache*/
+        orr     r1, r1, #(0x1 << 2)   /* enable D Cache*/
+        mcr     p15, 0, r1, c1, c0, 0 /* Write Control Register configuration data*/
  
         /*enable L2 cache (in addition to I,D cache on all levels)*/
-        @mrc     p15, 0, r0, c1, c0, 1
-        @orr     r0, r0, #(1<<1)
-        @mcr     p15, 0, r0, c1, c0, 1
+        mrc     p15, 0, r0, c1, c0, 1
+        orr     r0, r0, #(1<<1)
+        mcr     p15, 0, r0, c1, c0, 1
       
  
         ldr sp, =0xd0037d80 /* SVC stack top, from irom documentation*/

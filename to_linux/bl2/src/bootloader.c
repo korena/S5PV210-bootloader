@@ -121,6 +121,10 @@ static void uart_print_address_contents(uint32_t *address){
 	uart_print_hex(*address);
 }
 
+static void uart_print_address(uint32_t *address){
+	uart_print_hex(address);
+}
+
 char * because_ive_had_it_with_gcc_linker_strcpy(char *strDest, const char *strSrc)
 {
 	   // assert(strDest!=NULL && strSrc!=NULL);  // NO.
@@ -209,7 +213,7 @@ setup_end_tag(void)
 
 #define MACH_SMDKV210 2456
 #define DRAM_BASE 0x20000000
-#define ZIMAGE_LOAD_ADDRESS DRAM_BASE + 0x8000  // 32k away from the base address of DRAM
+#define ZIMAGE_LOAD_ADDRESS (uint32_t*) (DRAM_BASE + 0x8000)  // 32k away from the base address of DRAM
 #define ZIMAGE_LOAD_END_ADDRESS 1516384 // TODO: no good, find a better way.
 #define INITRD_LOAD_ADDRESS DRAM_BASE + 0x800000
 #define INITRD_LOAD_END_ADDRESS 4096  // size of the ramdisk 
@@ -244,21 +248,22 @@ int
 start_linux(void)
 {
     void (*theKernel)(uint32_t zero, uint32_t arch, uint32_t *params);
-    uint32_t i = 0, j = 0;
-    uint32_t *exec_at = (uint32_t *) ZIMAGE_LOAD_ADDRESS;
+    uint32_t i = 0, j = 0,ret;
+    uint32_t *exec_at =  ZIMAGE_LOAD_ADDRESS;
     uint32_t *dest_addr = exec_at;
-    uint32_t *parm_at = (uint32_t *) DRAM_BASE + 0x100 ;  // 256 bytes away from the base address of DRAM
+    uint32_t *parm_at = (uint32_t *)( DRAM_BASE + 0x100) ;  // 256 bytes away from the base address of DRAM
     uint32_t machine_type;
 
-    debug_print("about to copy linux image ...\n\r\0");
-
-    for(i=0;i<10;i++){
-	    if(i==8){
-		    for(j=0;j<1000;j++)
-	    		asm("nop");
-	    }
-   	load_image((uint32_t)ZIMAGE_START_BLOCK_NUMBER+i,(uint32_t*)exec_at+i*128,(uint16_t)1);    /* copy image into RAM */
-	debug_print("#");
+    debug_print("about to copy linux image to load address: ");
+	uart_print_address(exec_at);
+    for(i=0;i<2666;i++){
+   	ret = load_image((uint32_t)ZIMAGE_START_BLOCK_NUMBER+i,(uint32_t*)exec_at+i*128,(uint16_t)1);    /* copy image into RAM */
+	if(ret){
+//		debug_print("at address : ");
+//		uart_print_address(exec_at+i*128);
+//		debug_print("the value is: ");
+//		uart_print_address_contents(exec_at+i*128);
+	}
     }
  //   for(i=0;i<371;i++){// one page at a time(4kib) ...
  //          load_image((uint32_t)ZIMAGE_START_BLOCK_NUMBER+i*8,exec_at+(1024*i),(uint16_t)8);    /* copy image into RAM */
@@ -279,32 +284,14 @@ start_linux(void)
     machine_type = 3466;	              /* get machine type */
 
     theKernel = (void (*)(uint32_t, uint32_t, uint32_t*))exec_at; /* set the kernel address */
-			debug_print("first block start: \n\r\0");
-			uart_print_address_contents(dest_addr);
-			dest_addr += 127;
-			debug_print("first block end: \n\r\0");
-			uart_print_address_contents(dest_addr);
-			dest_addr += 1;
-			debug_print("second block start: \n\r\0");
-			uart_print_address_contents(dest_addr);
-			dest_addr += 127;
-			debug_print("second block end: \n\r\0");
-			uart_print_address_contents(dest_addr);
-			dest_addr += 1;
-			debug_print("third block start: \n\r\0");
-			uart_print_address_contents(dest_addr);
-			dest_addr += 127;
-			debug_print("third block end: \n\r\0");
-			uart_print_address_contents(dest_addr);
-			dest_addr += 1;
-			debug_print("fourth block start: \n\r\0");
-			uart_print_address_contents(dest_addr);
-			dest_addr += 127;
-			debug_print("fourth block end: \n\r\0");
-			uart_print_address_contents(dest_addr);
-     
-			debug_print("jumping to the kernel ... brace yourself!\n\r\0");
+    
+	debug_print("jumping to the kernel ... brace yourself!\n\r\0");
  
+        asm("mrc p15, 0, r1, c1, c0, 0"); /* Read Control Register configuration data*/
+	asm("bic r1, r1, #(0x1 << 12)");  /* Disable I Cache*/
+	asm("bic r1, r1, #(0x1 << 2)");   /* Disable D Cache*/
+	asm("mcr p15, 0, r1, c1, c0, 0"); /* Write Control Register configuration data*/
+
      theKernel(0, machine_type, parm_at);    /* jump to kernel with register set */
 	
     return 0;

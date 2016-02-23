@@ -150,13 +150,15 @@ find_lock_val:
 								@  0x00202400 (0000-0000-0010-0000-0010-0100-0000-0000)
 
 
-	ldr	r1, =0x20F01422				@ MemConfig0 512MB config, 4 banks,Mapping Method[12:15]0:linear, 1:linterleaved, 
+	ldr	r1, =0x20F00322				@ MemConfig0 512MB config, 4 banks,Mapping Method[12:15]0:linear, 1:linterleaved, 
 	str	r1, [r0, #DMC_MEMCONFIG0]		@ 2:Mixed 
 							@ 0x20F01422 (0010-0000-1111-0000-0000-0011-0010-0010) 0x20E01323
 					                @ 4 banks [3:0] = 0x2, row address bits = 14 => [4:7] = 0x2 (found in K4T1G084QF 5. 
 	                                                @ DDR2 SDRAM Addressing),col address bits = 11 => [11:8] = 0x4 (I think!), memory  
 	                                                @ address scheme  explained in 5.3 Address Mapping Scheme [15:12] = 0x0.
 	                                                @ [23:16] kept at default, [31:24] also kept as default. 
+							@ NOTE (Feb 23rd,2016)there was a mistake in the number of column address bits that
+							@ caused the memory overwrite effect faced when copying from sdmmc to sdram.
 
 	ldr	r1, =0xFF000000				@ PrechConfig    this maps to point 8 in the sequence ... these are choices you
         str	r1, [r0, #DMC_PRECHCONFIG]              @  can finetune later
