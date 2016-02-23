@@ -250,25 +250,13 @@ start_linux(void)
     void (*theKernel)(uint32_t zero, uint32_t arch, uint32_t *params);
     uint32_t i = 0, j = 0,ret;
     uint32_t *exec_at =  ZIMAGE_LOAD_ADDRESS;
-    uint32_t *dest_addr = exec_at;
     uint32_t *parm_at = (uint32_t *)( DRAM_BASE + 0x100) ;  // 256 bytes away from the base address of DRAM
     uint32_t machine_type;
 
     debug_print("about to copy linux image to load address: ");
 	uart_print_address(exec_at);
-    for(i=0;i<2666;i++){
-   	ret = load_image((uint32_t)ZIMAGE_START_BLOCK_NUMBER+i,(uint32_t*)exec_at+i*128,(uint16_t)1);    /* copy image into RAM */
-	if(ret){
-//		debug_print("at address : ");
-//		uart_print_address(exec_at+i*128);
-//		debug_print("the value is: ");
-//		uart_print_address_contents(exec_at+i*128);
-	}
-    }
- //   for(i=0;i<371;i++){// one page at a time(4kib) ...
- //          load_image((uint32_t)ZIMAGE_START_BLOCK_NUMBER+i*8,exec_at+(1024*i),(uint16_t)8);    /* copy image into RAM */
-//	   debug_print("#");
-//    }
+   	ret = load_image((uint32_t)ZIMAGE_START_BLOCK_NUMBER,(uint32_t*)exec_at,(uint16_t)2666);    /* copy image into RAM */
+
     debug_print("done copying linux image ...\n\r\0");
 
 //    debug_print("about to copy ramdisk image ...");
