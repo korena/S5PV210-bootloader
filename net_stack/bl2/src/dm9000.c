@@ -190,7 +190,6 @@ static void dm9000_inblk_32bit(void *data_ptr, int count)
 		((uint32_t *) data_ptr)[i] = DM9000_inl(DM9000_DATA);
 }
 
-//############################################ NOTE: above functions presumed OK!
 
 
 static void dm9000_rx_status_32bit(uint16_t *RxStatus, uint16_t *RxLen)
@@ -200,32 +199,39 @@ static void dm9000_rx_status_32bit(uint16_t *RxStatus, uint16_t *RxLen)
 	DM9000_outb(DM9000_MRCMD, DM9000_IO);
 
 	tmpdata = DM9000_inl(DM9000_DATA);
-	/* We'll assume no swapping is required, seems safe enugh ...*/
-	*RxStatus = __le16_to_cpu(tmpdata);
-	*RxLen = __le16_to_cpu(tmpdata >> 16);
+	/* We'll assume no endianness business is required, seems safe enough ...*/
+	*RxStatus = (uint16_t) (tmpdata & 0xff); // discarding higher bits, cause I'm paranoid like that 
+	*RxLen = (uint16_t) (tmpdata >> 16);
 }
 
 static void dm9000_rx_status_16bit(uint16_t *RxStatus, uint16_t *RxLen)
 {
+	uint32_t tmpdata;
+
 	DM9000_outb(DM9000_MRCMD, DM9000_IO);
 
-	*RxStatus = __le16_to_cpu(DM9000_inw(DM9000_DATA));
-	*RxLen = __le16_to_cpu(DM9000_inw(DM9000_DATA));
+	tmpdata = DM9000_inw(DM9000_DATA);
+	/* We'll assume no endianness business is required, seems safe enough ...*/
+	*RxStatus = (uint16_t) (tmpdata & 0xff); // discarding higher bits, cause I'm paranoid like that 
+	*RxLen = (uint16_t) (tmpdata >> 16);
 }
 
 static void dm9000_rx_status_8bit(uint16_t *RxStatus, uint16_t *RxLen)
 {
+	uint32_t tmpdata;
+
 	DM9000_outb(DM9000_MRCMD, DM9000_IO);
 
-	*RxStatus =
-		__le16_to_cpu(DM9000_inb(DM9000_DATA) +
-				(DM9000_inb(DM9000_DATA) << 8));
-	*RxLen =
-		__le16_to_cpu(DM9000_inb(DM9000_DATA) +
-				(DM9000_inb(DM9000_DATA) << 8));
+	tmpdata = DM9000_inb(DM9000_DATA);
+	/* We'll assume no endianness business is required, seems safe enough ...*/
+	*RxStatus = (uint16_t) (tmpdata & 0xff); // discarding higher bits, cause I'm paranoid like that 
+	*RxLen = (uint16_t) (tmpdata >> 16);
 }
 
+//############################################ NOTE: above functions presumed OK!
+
 /*
+ * TODO: I AM HERE !!
  *   Search DM9000 board, allocate space and register it
  *   */
 	int
@@ -322,7 +328,7 @@ static int dm9000_init(struct eth_device *dev, bd_t *bd)
 			break;
 		default:
 			/* Assume 8 bit mode, will probably not work anyway */
-			printf("DM9000: Undefined IO-mode: ");
+			printf("DM9000: Undefined IO-mode:0x%x",io_mode);
 			//TODO: print hex
 			db->outblk    = dm9000_outblk_8bit;
 			db->inblk     = dm9000_inblk_8bit;
