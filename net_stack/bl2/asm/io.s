@@ -5,6 +5,13 @@
 .text
 .code 32
 
+.global __raw_writeb
+.global __raw_writew
+.global __raw_writel
+.global __raw_readb
+.global __raw_readw
+.global __raw_readl
+
 __raw_writeb:
 	push	{lr}
 	strb	r0,[r1]

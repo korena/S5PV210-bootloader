@@ -49,30 +49,33 @@
  *   by moaz korena <moazkorena@gmail.com>
  */
 
-#include <common.h>
-#include <command.h>
+//#include <common.h>
+//#include <command.h>
 #include <net.h>
-#include <asm/io.h>
+//#include <asm/io.h>
 
 #include <stdint.h>
 #include <io.h>
 #include <dm9000.h>
 #include <terminal.h>
+#include <timer.h>
 
 /* Board/System/Debug information/definition ---------------- */
 
 /* #define CONFIG_DM9000_DEBUG */
 
 #ifdef CONFIG_DM9000_DEBUG
-#define DM9000_DBG(fmt,args...) printf(fmt, ##args)
+#define DM9000_DBG(fmt,...) printf(fmt, __VA_ARGS__)
 #define DM9000_DMP_PACKET(func,packet,length)  \
 	do { \
 		int i; 							\
-		printf("%s: length: %d\n", func, length);		\
+		uart_print(func);					\
+		printf(": length: %d\n",length);		\
 		for (i = 0; i < length; i++) {				\
-			if (i % 8 == 0)					\
-			printf("\n%s: %02x: ", func, i);	\
-			printf("%02x ", ((unsigned char *) packet)[i]);	\
+			if (i % 8 == 0){					\
+			uart_print(func);				\
+			printf(": %x: ", i);}	\
+			printf("%x ", ((unsigned char *) packet)[i]);	\
 		} printf("\n");						\
 	} while(0)
 #else
@@ -109,36 +112,36 @@ static uint8_t DM9000_ior(int);
 static void DM9000_iow(int reg, uint8_t value);
 
 /* DM9000 network board routine ---------------------------- */
-#ifndef CONFIG_DM9000_BYTE_SWAPPED
-#define DM9000_outb(d,r) writeb(d, (volatile uint8_t *)(r))
-#define DM9000_outw(d,r) writew(d, (volatile uint16_t *)(r))
-#define DM9000_outl(d,r) writel(d, (volatile uint32_t *)(r))
-#define DM9000_inb(r) readb((volatile uint8_t *)(r))
-#define DM9000_inw(r) readw((volatile uint16_t *)(r))
-#define DM9000_inl(r) readl((volatile uint32_t *)(r))
-#else
+//#ifndef CONFIG_DM9000_BYTE_SWAPPED
+//#define DM9000_outb(d,r) writeb(d, (volatile uint8_t *)(r))
+//#define DM9000_outw(d,r) writew(d, (volatile uint16_t *)(r))
+//#define DM9000_outl(d,r) writel(d, (volatile uint32_t *)(r))
+//#define DM9000_inb(r) readb((volatile uint8_t *)(r))
+//#define DM9000_inw(r) readw((volatile uint16_t *)(r))
+//#define DM9000_inl(r) readl((volatile uint32_t *)(r))
+//#else
 #define DM9000_outb(d, r) __raw_writeb(d, r)
 #define DM9000_outw(d, r) __raw_writew(d, r)
 #define DM9000_outl(d, r) __raw_writel(d, r)
 #define DM9000_inb(r) __raw_readb(r)
 #define DM9000_inw(r) __raw_readw(r)
 #define DM9000_inl(r) __raw_readl(r)
-#endif
+//#endif
 
 #ifdef CONFIG_DM9000_DEBUG
 	static void
 dump_regs(void)
 {
-	DM9000_DBG("\n");
-	DM9000_DBG("NCR   (0x00): %02x\n", DM9000_ior(0));
-	DM9000_DBG("NSR   (0x01): %02x\n", DM9000_ior(1));
-	DM9000_DBG("TCR   (0x02): %02x\n", DM9000_ior(2));
-	DM9000_DBG("TSRI  (0x03): %02x\n", DM9000_ior(3));
-	DM9000_DBG("TSRII (0x04): %02x\n", DM9000_ior(4));
-	DM9000_DBG("RCR   (0x05): %02x\n", DM9000_ior(5));
-	DM9000_DBG("RSR   (0x06): %02x\n", DM9000_ior(6));
-	DM9000_DBG("ISR   (0xFE): %02x\n", DM9000_ior(DM9000_ISR));
-	DM9000_DBG("\n");
+	DM9000_DBG("dumping registers .. \n\r\0");
+	DM9000_DBG("NCR   (0x00): %x\n\r\0", DM9000_ior(0));
+	DM9000_DBG("NSR   (0x01): %x\n\r\0", DM9000_ior(1));
+	DM9000_DBG("TCR   (0x02): %x\n\r\0", DM9000_ior(2));
+	DM9000_DBG("TSRI  (0x03): %x\n\r\0", DM9000_ior(3));
+	DM9000_DBG("TSRII (0x04): %x\n\r\0", DM9000_ior(4));
+	DM9000_DBG("RCR   (0x05): %x\n\r\0", DM9000_ior(5));
+	DM9000_DBG("RSR   (0x06): %x\n\r\0", DM9000_ior(6));
+	DM9000_DBG("ISR   (0xFE): %x\n\r\0", DM9000_ior(DM9000_ISR));
+	DM9000_DBG("done dumping registers \n\r\0");
 }
 #endif
 
@@ -243,11 +246,11 @@ dm9000_probe(void)
 	id_val |= DM9000_ior(DM9000_PIDL) << 16;
 	id_val |= DM9000_ior(DM9000_PIDH) << 24;
 	if (id_val == DM9000_ID) {
-		printf("dm9000 i/o: 0x%x, id: 0x%x \n", CONFIG_DM9000_BASE,
+		printf("dm9000 i/o: 0x%x, id: 0x%x \n\r\0", CONFIG_DM9000_BASE,
 				id_val);
 		return 0;
 	} else {
-		printf("dm9000 not found at 0x%08x id: 0x%08x\n",
+		printf("dm9000 not found at 0x%x id: 0x%x\n\r\0",
 				CONFIG_DM9000_BASE, id_val);
 		return -1;
 	}
@@ -290,13 +293,14 @@ dm9000_reset(void)
 
 /* Initialize dm9000 board
  * */
-static int dm9000_init(struct eth_device *dev, bd_t *bd)
+//static int dm9000_init(struct eth_device *dev, bd_t *bd)
+static int dm9000_init(struct eth_device *dev)
 {
 	int i, oft, lnk;
 	uint8_t io_mode;
 	struct board_info *db = &dm9000_info;
 
-	DM9000_DBG("%s\n", __func__);
+	uart_print(__func__);
 
 	/* RESET device */
 	dm9000_reset();
@@ -328,8 +332,7 @@ static int dm9000_init(struct eth_device *dev, bd_t *bd)
 			break;
 		default:
 			/* Assume 8 bit mode, will probably not work anyway */
-			printf("DM9000: Undefined IO-mode:0x%x",io_mode);
-			//TODO: print hex
+			printf("DM9000: Undefined IO-mode:0x%x\n\r\0",io_mode);
 			db->outblk    = dm9000_outblk_8bit;
 			db->inblk     = dm9000_inblk_8bit;
 			db->rx_status = dm9000_rx_status_8bit;
@@ -352,7 +355,7 @@ static int dm9000_init(struct eth_device *dev, bd_t *bd)
 	DM9000_iow(DM9000_NSR, NSR_WAKEST | NSR_TX2END | NSR_TX1END);
 	/* Clear interrupt status */
 	DM9000_iow(DM9000_ISR, ISR_ROOS | ISR_ROS | ISR_PTS | ISR_PRS);
-
+	//FIXME: print pointer/address ?? ...
 	printf("MAC: %pM\n", dev->enetaddr);
 
 	/* fill device MAC address registers */
@@ -363,8 +366,7 @@ static int dm9000_init(struct eth_device *dev, bd_t *bd)
 
 	/* read back mac, just to be sure */
 	for (i = 0, oft = 0x10; i < 6; i++, oft++)
-		DM9000_DBG("%02x:", DM9000_ior(oft));
-	DM9000_DBG("\n");
+		DM9000_DBG("%x\n\r\0:", DM9000_ior(oft));
 
 	/* Activate DM9000 */
 	/* RX enable */
@@ -377,7 +379,7 @@ static int dm9000_init(struct eth_device *dev, bd_t *bd)
 		udelay(1000);
 		i++;
 		if (i == 10000) {
-			printf("could not establish link\n");
+			printf("could not establish link\n\r\0");
 			return 0;
 		}
 	}
@@ -402,7 +404,7 @@ static int dm9000_init(struct eth_device *dev, bd_t *bd)
 			printf("unknown: %d ", lnk);
 			break;
 	}
-	printf("mode\n");
+	printf("mode\n\r\0");
 	return 0;
 }
 
@@ -438,13 +440,13 @@ static int dm9000_send(struct eth_device *netdev, volatile void *packet,
 	while ( !(DM9000_ior(DM9000_NSR) & (NSR_TX1END | NSR_TX2END)) ||
 			!(DM9000_ior(DM9000_ISR) & IMR_PTM) ) {
 		if (get_timer(0) >= tmo) {
-			printf("transmission timeout\n");
+			printf("transmission timeout\n\r\0");
 			break;
 		}
 	}
 	DM9000_iow(DM9000_ISR, IMR_PTM); /* Clear Tx bit in ISR */
 
-	DM9000_DBG("transmit done\n\n");
+	DM9000_DBG("transmit done\n\r\n\r\0");
 	return 0;
 }
 
@@ -454,7 +456,7 @@ static int dm9000_send(struct eth_device *netdev, volatile void *packet,
  *     */
 static void dm9000_halt(struct eth_device *netdev)
 {
-	DM9000_DBG("%s\n", __func__);
+	uart_print(__func__);
 
 	/* RESET devie */
 	dm9000_phy_write(0, 0x8000);	/* PHY RESET */
@@ -468,7 +470,7 @@ static void dm9000_halt(struct eth_device *netdev)
  *   */
 static int dm9000_rx(struct eth_device *netdev)
 {
-	uint8_t rxbyte, *rdptr = (uint8_t *) NetRxPackets[0];
+	uint8_t rxbyte, *rdptr = (uint8_t *) net_rx_packets[0];
 	uint16_t RxStatus, RxLen = 0;
 	struct board_info *db = &dm9000_info;
 
@@ -491,7 +493,7 @@ static int dm9000_rx(struct eth_device *netdev)
 		if (rxbyte > DM9000_PKT_RDY) {
 			DM9000_iow(DM9000_RCR, 0x00);	/* Stop Device */
 			DM9000_iow(DM9000_ISR, 0x80);	/* Stop INT request */
-			printf("DM9000 error: status check fail: 0x%x\n",
+			printf("DM9000 error: status check fail: 0x%x\n\r\0",
 					rxbyte);
 			return 0;
 		}
@@ -499,12 +501,12 @@ static int dm9000_rx(struct eth_device *netdev)
 		if (rxbyte != DM9000_PKT_RDY)
 			return 0; /* No packet received, ignore */
 
-		DM9000_DBG("receiving packet\n");
+		DM9000_DBG("receiving packet\n\r\0");
 
 		/* A packet ready now  & Get status/length */
 		(db->rx_status)(&RxStatus, &RxLen);
 
-		DM9000_DBG("rx status: 0x%04x rx len: %d\n", RxStatus, RxLen);
+		DM9000_DBG("rx status: 0x%04x rx len: %d\n\r\0", RxStatus, RxLen);
 
 		/* Move data from DM9000 */
 		/* Read received packet from RX SRAM */
@@ -513,23 +515,23 @@ static int dm9000_rx(struct eth_device *netdev)
 		if ((RxStatus & 0xbf00) || (RxLen < 0x40)
 				|| (RxLen > DM9000_PKT_MAX)) {
 			if (RxStatus & 0x100) {
-				printf("rx fifo error\n");
+				printf("rx fifo error\n\r\0");
 			}
 			if (RxStatus & 0x200) {
-				printf("rx crc error\n");
+				printf("rx crc error\n\r\0");
 			}
 			if (RxStatus & 0x8000) {
-				printf("rx length error\n");
+				printf("rx length error\n\r\0");
 			}
 			if (RxLen > DM9000_PKT_MAX) {
-				printf("rx length too big\n");
+				printf("rx length too big\n\r\0");
 				dm9000_reset();
 			}
 		} else {
 			DM9000_DMP_PACKET(__func__ , rdptr, RxLen);
 
-			DM9000_DBG("passing packet to upper layer\n");
-			NetReceive(NetRxPackets[0], RxLen);
+			DM9000_DBG("passing packet to upper layer\n\r\0");
+			NetReceive(net_rx_packets[0], RxLen);
 		}
 	}
 	return 0;
@@ -605,7 +607,7 @@ dm9000_phy_read(int reg)
 	val = (DM9000_ior(DM9000_EPDRH) << 8) | DM9000_ior(DM9000_EPDRL);
 
 	/* The read data keeps on REG_0D & REG_0E */
-	DM9000_DBG("dm9000_phy_read(0x%x): 0x%x\n", reg, val);
+	printf("dm9000_phy_read(0x%x): 0x%x\n\r\0", reg, val);
 	return val;
 }
 
@@ -625,10 +627,11 @@ dm9000_phy_write(int reg, uint16_t value)
 	DM9000_iow(DM9000_EPCR, 0xa);	/* Issue phyxcer write command */
 	udelay(500);			/* Wait write complete */
 	DM9000_iow(DM9000_EPCR, 0x0);	/* Clear phyxcer write command */
-	DM9000_DBG("dm9000_phy_write(reg:0x%x, value:0x%x)\n", reg, value);
+	DM9000_DBG("dm9000_phy_write(reg:0x%x, value:0x%x)\n\r\0", reg, value);
 }
 
-int dm9000_initialize(bd_t *bis)
+//int dm9000_initialize(bd_t *bis)
+int dm9000_initialize(void)
 {
 	struct eth_device *dev = &(dm9000_info.netdev);
 
@@ -641,7 +644,7 @@ int dm9000_initialize(bd_t *bis)
 	dev->recv = dm9000_rx;
 	sprintf(dev->name, "dm9000");
 
-	eth_register(dev);
+//	eth_register(dev);
 
 	return 0;
 }

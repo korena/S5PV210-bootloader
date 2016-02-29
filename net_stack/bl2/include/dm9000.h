@@ -140,14 +140,14 @@
 
 
 /**************** function prototypes ********************/
-void dm9000_write_srom_word(int offset, u16 val);
-void dm9000_read_srom_word(int offset, u8 *to);
+void dm9000_write_srom_word(int offset, uint16_t val);
+void dm9000_read_srom_word(int offset, uint8_t *to);
 
 /**************** TINY210 *************/
 //TODO: find out what these values are from the documentation !!
 #define CONFIG_DM9000_BASE	0x16000000   
-248	#define DM9000_IO	CONFIG_DM9000_BASE
-249	#define DM9000_DATA	(CONFIG_DM9000_BASE+4)
+#define DM9000_IO	CONFIG_DM9000_BASE
+#define DM9000_DATA	(CONFIG_DM9000_BASE+4)
 
 
 #endif

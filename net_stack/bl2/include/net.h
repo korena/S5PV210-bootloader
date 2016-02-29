@@ -7,7 +7,8 @@ struct eth_device {
 	int iobase;
 	int state;
 
-	int  (*init) (struct eth_device*, bd_t*);
+	//int  (*init) (struct eth_device*, bd_t*);
+	int  (*init) (struct eth_device*);
 	int  (*send) (struct eth_device*, volatile void* packet, int length);
 	int  (*recv) (struct eth_device*);
 	void (*halt) (struct eth_device*);
@@ -15,9 +16,14 @@ struct eth_device {
 //	int (*mcast) (struct eth_device*, u32 ip, u8 set);
 //#endif
 	int  (*write_hwaddr) (struct eth_device*);
-	struct eth_device *next;
+//	struct eth_device *next;
 	int index;
 	void *priv;
 };
+
+# define PKTBUFSRX	16 // This is the length of the packet buffer,
+			   //this value is just an assumption, we'll see if it fails
+			   
+char *net_rx_packets[PKTBUFSRX];
 
 #endif

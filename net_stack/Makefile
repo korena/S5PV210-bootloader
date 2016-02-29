@@ -18,19 +18,21 @@ BIN  = $(OBJCOPY) -O binary -S
 PRJ_ROOT_DIR := $(shell pwd)
 PROJECT_HOME := $(shell pwd)
 
-ASM_SRC_DIR = $(PROJECT_HOME)/asm
-SRC_DIR = $(PROJECT_HOME)/src
 
+##### host tools #################
 HOST_TOOLS_DIR= $(PROJECT_HOME)/host_tools
 HOST_SCRIPTS_DIR=$(PROJECT_HOME)/host_scripts
 
-# add include directories here ...
-INCLUDES_DIR = $(PROJECT_HOME)/include
+##### BL1 related (first stage) #####
+BL1_ASM_SRC_DIR = $(PROJECT_HOME)/asm
+BL1_C_SRC_DIR = $(PROJECT_HOME)/src
+BL1_INCLUDES_DIR = $(PROJECT_HOME)/include
+
 
 ##### bootloader related (second stage onwards) #####
 BL2_ROOT_DIR = $(PROJECT_HOME)/bl2
-BL2_ASM_DIR = $(BL2_ROOT_DIR)/asm
-BL2_INC_DIR = $(BL2_ROOT_DIR)/include
+BL2_ASM_SRC_DIR = $(BL2_ROOT_DIR)/asm
+BL2_INCLUDES_DIR = $(BL2_ROOT_DIR)/include
 BL2_C_SRC_DIR = $(BL2_ROOT_DIR)/src
 
 
@@ -54,14 +56,12 @@ BL1_LDS   = linker.lds
 
 
 #BL1 source files expression ...
-BL1_SRCs_ASM += $(wildcard $(ASM_SRC_DIR)/*.s)
-BL1_SRCs_C += $(wildcard $(SRC_DIR)/*.c)
+BL1_SRCs_ASM += $(wildcard $(BL1_ASM_SRC_DIR)/*.s)
+BL1_SRCs_C += $(wildcard $(BL1_C_SRC_DIR)/*.c)
 OBJS_BL1 = $(BL1_SRCs_ASM:.s=.o) $(BL1_SRCs_C:.c=.o) 
 # BL1 include files expression ...
-ASM_INCLUDES += $(wildcard $(INCLUDES_DIR)/*.inc)
-C_INCLUDES += $(wildcard $(INCLUDES_DIR)/*.h)
-
-
+BL1_ASM_INCLUDES += $(wildcard $(BL1_INCLUDES_DIR)/*.inc)
+BL1_C_INCLUDES += $(wildcard $(BL1_INCLUDES_DIR)/*.h)
 
 
 BL2_BIN = $(TARGET_BIN_DIR)/BL2.bin
@@ -69,11 +69,11 @@ BL2_ELF = $(TARGET_BIN_DIR)/BL2.elf
 BL2_LDS   = $(BL2_ROOT_DIR)/BL2_linker.lds
 
 #BL2 source files expressions ...
-BL2_SRCs_ASM += $(wildcard $(BL2_ASM_DIR)/*.s)
+BL2_SRCs_ASM += $(wildcard $(BL2_ASM_SRC_DIR)/*.s)
 BL2_SRCs_C += $(wildcard $(BL2_C_SRC_DIR)/*.c)
 OBJS_BL2 = $(BL2_SRCs_ASM:.s=.o) $(BL2_SRCs_C:.c=.o)
 
-CFLAGS =  -Os -nostdlib -march=armv7-a
+CFLAGS =  -Os -nostdlib -lgcc -march=armv7-a
 AFLAGS = -march=armv7-a
 CFLAGS_HOST = -Os -Wall
 
@@ -102,11 +102,17 @@ $(IMGMAKEBL2):
 fuse:	$(BL1_BIN).boot $(BL2_BIN)
 	. $(HOST_SCRIPTS_DIR)/fuseBin.sh
 	
-%.o:	%.c
-	$(CC) -c $(CFLAGS) -I . $(INCLUDES_DIR)  $< -o $@ 
+$(BL1_C_SRC_DIR)/%.o:	$(BL1_C_SRC_DIR)/%.c
+	$(CC) -c $(CFLAGS) -I $(BL1_INCLUDES_DIR)  $< -o $@ 
 
-%.o:	%.s
-	$(AS) -c $(AFLAGS) -I  $(ASM_INCLUDES)  $< -o $@
+$(BL1_ASM_SRC_DIR)/%.o:	$(BL1_ASM_SRC_DIR)/%.s
+	$(AS) -c $(AFLAGS) -I $(BL1_INCLUDES_DIR)  $< -o $@
+
+$(BL2_C_SRC_DIR)/%.o:	$(BL2_C_SRC_DIR)/%.c
+	$(CC) -c $(CFLAGS) -I $(BL2_INCLUDES_DIR)  $< -o $@ 
+
+$(BL2_ASM_SRC_DIR)/%.o:	$(BL2_ASM_SRC_DIR)/%.s
+	$(AS) -c $(AFLAGS) -I $(BL2_INCLUDES_DIR)  $< -o $@
 
 %elf: $(OBJS_BL1)
 	$(CC) $(OBJS_BL1) $(LDFLAGS) $(LIBS) -o $@
@@ -124,5 +130,5 @@ dep:
 	gccmakedep $(OBJS_BL1:.o=.c) $(OBJS_BL1:.o=.s) $(OBJS_BL2:.o=.c) $(OBJS_BL2:.o=.s)
 
 clean:
-	rm -rf $(OBJS) $(HOST_BIN_DIR)/*  $(TARGET_BIN_DIR)/*.bin $(TARGET_BIN_DIR)/*.elf $(TARGET_BIN_DIR)/*.boot $(TARGET_BIN_DIR)/*.o *.map *.o $(ASM_SRC_DIR)/*.o $(SRC_DIR)/*.o $(BL2_ASM_DIR)/*.o $(BL2_C_SRC_DIR)/*.o $(BL2_ROOT_DIR)/*.map $(TARGET_BIN_DIR)/*.img
+	rm -rf $(OBJS) $(HOST_BIN_DIR)/*  $(TARGET_BIN_DIR)/*.bin $(TARGET_BIN_DIR)/*.elf $(TARGET_BIN_DIR)/*.boot $(TARGET_BIN_DIR)/*.o *.map *.o $(BL1_ASM_SRC_DIR)/*.o $(BL1_C_SRC_DIR)/*.o $(BL2_ASM_SRC_DIR)/*.o $(BL2_C_SRC_DIR)/*.o $(BL2_ROOT_DIR)/*.map $(TARGET_BIN_DIR)/*.img
 

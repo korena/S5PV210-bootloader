@@ -4,7 +4,7 @@ Adapted from http://www.simtec.co.uk/products/SWLINUX/files/booting_article.html
 
 #include <stdint.h>
 #include <string.h>
-#include <terminal.h>
+#include "terminal.h"
 
 
 /* list of possible tags */
@@ -124,19 +124,8 @@ static void uart_print_address_contents(uint32_t *address){
 }
 
 static void uart_print_address(uint32_t *address){
-	uart_print_hex(address);
+	uart_print_hex((uint32_t)address);
 }
-
-char * because_ive_had_it_with_gcc_linker_strcpy(char *strDest, const char *strSrc)
-{
-	   // assert(strDest!=NULL && strSrc!=NULL);  // NO.
-	    char *temp = strDest;
-	    while(*strDest++ = *strSrc++); // or while((*strDest++=*strSrc++) != '\0');
-//	    debug_print(temp);
-	    return temp;
-}
-
-
 
 static void
 setup_core_tag(void * address,long pagesize)
@@ -201,7 +190,7 @@ setup_cmdline_tag(const char * line)
     params->hdr.tag = ATAG_CMDLINE;         /* Commandline tag */
     params->hdr.size = (sizeof(struct atag_header) + linelen + 1 + 4) >> 2;
 
-    because_ive_had_it_with_gcc_linker_strcpy(params->u.cmdline.cmdline,line); /* place commandline into tag */
+    strcpy(params->u.cmdline.cmdline,line); /* place commandline into tag */
 
     params = tag_next(params);              /* move pointer to next tag */
 }
