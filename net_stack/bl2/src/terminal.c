@@ -1,9 +1,8 @@
 #include <stdarg.h>
 #include <terminal.h>
-#include <stdarg.h>
-//#include <stdlib.h>
+#include <stdint.h>
 
-
+static char out[512] = {0};
 
 
 /*
@@ -14,14 +13,15 @@ int printf(const char* str, ...){
 	int i=0,j=0;
 	int arg;
 	va_start(ap,str);
-	char out[512]; // size over cpu cycles tradeoff...
-	char charInt[12]; // maximum size of printable variable
-	while(str != NULL && *str != '\0'){
+	char charInt[12] ={0}; // maximum size of printable variable
+	out[512] = {0}; 
+
+	while(str != NULL && *str != '\0' && i < 512){
 		if(*str == '%'){
 			switch(*++str){
 				case 'x':{
 						 arg = va_arg(ap, int);
-						 snprintf(charInt,12,"%x",arg);
+						 printnum(charInt,12,"%x",arg);
 						 for(j=0;j<12;j++){
 							 if(charInt[j] != '\0'){
 								 out[i++] = charInt[j];
@@ -34,7 +34,7 @@ int printf(const char* str, ...){
 					 break;
 				case 'd':{
 						 arg = va_arg(ap, int);
-						 snprintf(charInt,12,"%d",arg);
+						 printnum(charInt,12,"%d",arg);
 						 for(j=0;j<12;j++){
 							 if(charInt[j] != '\0'){
 								 out[i++] = charInt[j];
@@ -52,9 +52,7 @@ int printf(const char* str, ...){
 					break;
 			}
 		}else{
-			if(i<512){
-				out[i++]=*str++;
-			}
+			out[i++]=*str++;
 		}
 	}
 	//better late than never !
@@ -75,10 +73,58 @@ char *strcpy(char *strDest, const char *strSrc)
 }
 
 
-int snprintf (char *__restrict__ s, size_t maxlen, const char *__restrict__ format, ...){
-//TODO: implement me!
+/**
+ * snprintf substitute,barely tested, no error checking, blind trust.
+ */
+int printnum (char *__restrict__ s, size_t maxlen, const char *__restrict__ format, uint32_t num){
+uint32_t result = 0;    
+int i=0;
+uint32_t lookup_index = 0;
+while(format != NULL && *format != '\0'){
+        if(*format == '%' && *(format+1) != '\0'){
+                switch(*++format){
+                case 'x':{
+                         // print in hex format into *s  
+                         
+                         for(i=7;i>=0;i--){
+                                 if(((num >> i*4) & 0xF) != 0)
+                                         break; // skipping leading zeros
+                         }
+                         for(i;i>=0;i--){
+                                 if(maxlen != 0 && s != NULL){
+                                         if(((num >> i*4)& 0xF) <= 0x9){
+                                                 *s =(char) (((num >> i*4) & 0xF) + '0');
+                                         }else{
+                                                 *s =(char) ((((num >> i*4) & 0xF) + 'A')-10);
+                                         }
+                                         maxlen--;
+                                         s++;
+                                 } else{
+                                         return -1;
+                                 }
+                         }
+                         // terminate string ...
+                         if(maxlen !=0 && s != NULL){
+                                 *s = '\0';
+                         }else{
+                         return -1;
+                         }
+                         return 0;
+                         }break;
+                case 'd':{
+
+                                 //TODO:  print in decimal format into *s  
+
+                         }break;
+                default: {
+                         return -2;
+                         }
+                }
+
+        }
 
 
 }
 
+}
 
