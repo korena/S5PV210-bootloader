@@ -1,5 +1,8 @@
 # for home
-CROSS_COMPILE	= /home/korena/Development/Tools/gcc-arm-none-eabi-4_8-2014q3/bin/arm-none-eabi-
+CROSS_COMPILE	= /home/korena/Compilers/gcc-arm-none-eabi-5_2-2015q4/bin/arm-none-eabi-
+LIBS_DIR = -L /home/korena/Compilers/gcc-arm-none-eabi-5_2-2015q4/lib/gcc/arm-none-eabi/5.2.1/
+LIBS_DIR += -L /home/korena/Compilers/gcc-arm-none-eabi-5_2-2015q4/lib/
+LIBS_DIR += -L /home/korena/Compilers/gcc-arm-none-eabi-5_2-2015q4/arm-none-eabi/lib/
 # for work
 #CROSS_COMPILE	=arm-none-eabi-
 
@@ -73,7 +76,9 @@ BL2_SRCs_ASM += $(wildcard $(BL2_ASM_SRC_DIR)/*.s)
 BL2_SRCs_C += $(wildcard $(BL2_C_SRC_DIR)/*.c)
 OBJS_BL2 = $(BL2_SRCs_ASM:.s=.o) $(BL2_SRCs_C:.c=.o)
 
-CFLAGS =  -Os -nostdlib -lgcc -march=armv7-a
+CFLAGS =  -Os -Wall -march=armv7-a
+LDFLAGS = -nostdlib 
+LIBS = -lgcc -lc
 AFLAGS = -march=armv7-a
 CFLAGS_HOST = -Os -Wall
 
@@ -87,7 +92,7 @@ $(BL1_BIN).boot:	$(BL1_BIN) $(IMGMAKE)
 	$(IMGMAKE) ./$(BL1_BIN) ./$(BL1_BIN).boot
 
 $(BL2_BIN):   $(OBJS_BL2)
-	$(LD) -T $(BL2_LDS) -o $(BL2_ELF) -Map $(BL2_ROOT_DIR)/BL2.map $(OBJS_BL2)
+	$(LD)  -T $(BL2_LDS) -o $(BL2_ELF) -Map $(BL2_ROOT_DIR)/BL2.map $(OBJS_BL2) $(LDFLAGS) $(LIBS_DIR) $(LIBS)
 	$(OBJCOPY) -O binary $(BL2_ELF) $(BL2_BIN)
 
 $(BL2_BIN).img:	$(BL2_BIN) $(IMGMAKEBL2)
@@ -114,14 +119,13 @@ $(BL2_C_SRC_DIR)/%.o:	$(BL2_C_SRC_DIR)/%.c
 $(BL2_ASM_SRC_DIR)/%.o:	$(BL2_ASM_SRC_DIR)/%.s
 	$(AS) -c $(AFLAGS) -I $(BL2_INCLUDES_DIR)  $< -o $@
 
-%elf: $(OBJS_BL1)
-	$(CC) $(OBJS_BL1) $(LDFLAGS) $(LIBS) -o $@
+$(BL1_ELF): $(OBJS_BL1)
+	$(CC) $(OBJS_BL1) $(CFLAGS) -o $@
 
-%hex: %elf
-	$(HEX) $< $@
-        
-%bin: %elf
-	$(BIN)  $< $@
+
+$(BL2_ELF): $(OBJS_BL2)
+	$(CC) $(OBJS_BL2) $(CFLAGS) -o $@
+
 
 readFileBytes:
 	gcc $(CFLAGS_HOST) -o $(HOST_BIN_DIR)/readBytes $(HOST_TOOLS_DIR)/readFileBytes.c

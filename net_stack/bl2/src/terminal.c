@@ -1,6 +1,8 @@
 #include <stdarg.h>
 #include <terminal.h>
 #include <stdint.h>
+#include <string.h>
+
 
 static char out[512] = {0};
 
@@ -14,7 +16,8 @@ int printf(const char* str, ...){
 	int arg;
 	va_start(ap,str);
 	char charInt[12] ={0}; // maximum size of printable variable
-	out[512] = {0}; 
+	
+	memset(out, 0, sizeof(out));
 
 	while(str != NULL && *str != '\0' && i < 512){
 		if(*str == '%'){
@@ -60,6 +63,7 @@ int printf(const char* str, ...){
 		*(out+i)='\0';
 	}
 	uart_print(out);
+	return 0;
 }
 
 
@@ -77,9 +81,12 @@ char *strcpy(char *strDest, const char *strSrc)
  * snprintf substitute,barely tested, no error checking, blind trust.
  */
 int printnum (char *__restrict__ s, size_t maxlen, const char *__restrict__ format, uint32_t num){
-uint32_t result = 0;    
 int i=0;
-uint32_t lookup_index = 0;
+uint32_t base =1;
+
+for (;(i<maxlen) && (s != NULL);i++)
+        s[i]=0;
+
 while(format != NULL && *format != '\0'){
         if(*format == '%' && *(format+1) != '\0'){
                 switch(*++format){
@@ -90,7 +97,7 @@ while(format != NULL && *format != '\0'){
                                  if(((num >> i*4) & 0xF) != 0)
                                          break; // skipping leading zeros
                          }
-                         for(i;i>=0;i--){
+                         for(;i>=0;i--){
                                  if(maxlen != 0 && s != NULL){
                                          if(((num >> i*4)& 0xF) <= 0x9){
                                                  *s =(char) (((num >> i*4) & 0xF) + '0');
@@ -103,28 +110,44 @@ while(format != NULL && *format != '\0'){
                                          return -1;
                                  }
                          }
-                         // terminate string ...
-                         if(maxlen !=0 && s != NULL){
-                                 *s = '\0';
-                         }else{
-                         return -1;
-                         }
-                         return 0;
-                         }break;
-                case 'd':{
+			 // terminate string ...
+			 if(maxlen !=0 && s != NULL){
+				 *s = '\0';
+			 }else{
+				 return -1;
+			 }
+			 return 0;
+			 }break;
+		case 'd':{
+				 // print in decimal format into *s  
+				 while(base < num){
+					 base = (base << 3)+(base << 1);
+				 }
+				 base /= 10;
+				 while((base >= 1) && (maxlen != 0) && (s != NULL)){
+					 *s = (char)(num/base + '0');
+					 num -= ((num/base)*base);
+					 maxlen--;
+					 s++;
+					 base /= 10;
+				 }
+				 // terminate string ...
+				 if(maxlen !=0 && s != NULL){
+					 *s = '\0';
+				 }else{
+					 return -1;
+				 }
+				 return 0;
+			 }break;
 
-                                 //TODO:  print in decimal format into *s  
+		default: {
+				 return -2;
+			 }
+		}
 
-                         }break;
-                default: {
-                         return -2;
-                         }
-                }
-
-        }
-
+	}
 
 }
-
+return -1;
 }
 
