@@ -87,12 +87,25 @@ uint32_t base =1;
 for (;(i<maxlen) && (s != NULL);i++)
         s[i]=0;
 
+
+
 while(format != NULL && *format != '\0'){
         if(*format == '%' && *(format+1) != '\0'){
                 switch(*++format){
                 case 'x':{
                          // print in hex format into *s  
                          
+			// in case zero was passed :
+			if(num == 0){
+				*s = '0';
+				 if(++s != NULL){
+					 *s='\0';
+				 	 return 0;
+				 } else{
+					 *--s='\0';
+				 	 return -1;
+				 }
+			}
                          for(i=7;i>=0;i--){
                                  if(((num >> i*4) & 0xF) != 0)
                                          break; // skipping leading zeros
@@ -120,6 +133,17 @@ while(format != NULL && *format != '\0'){
 			 }break;
 		case 'd':{
 				 // print in decimal format into *s  
+			// in case zero was passed :
+			if(num == 0){
+				*s = '0';
+				 if(++s != NULL){
+					 *s='\0';
+				 	 return 0;
+				 } else{
+					 *--s='\0';
+				 	 return -1;
+				 }
+			}
 				 while(base < num){
 					 base = (base << 3)+(base << 1);
 				 }

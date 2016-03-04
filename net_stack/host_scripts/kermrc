@@ -2,6 +2,7 @@ set line /dev/ttyUSB0
 set speed 115200
 set carrier-watch off
 set handshake none
+SET SESSION-LOG TIMESTAMPS
 set flow-control none
 set TERMINAL CR-DISPLAY CRLF
 robust

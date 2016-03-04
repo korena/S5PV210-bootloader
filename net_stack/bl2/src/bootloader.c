@@ -5,7 +5,7 @@ Adapted from http://www.simtec.co.uk/products/SWLINUX/files/booting_article.html
 #include <stdint.h>
 #include <string.h>
 #include "terminal.h"
-
+#include "timer.h"
 
 /* list of possible tags */
 #define ATAG_NONE       0x00000000
@@ -264,14 +264,28 @@ start_linux(void)
 
     theKernel = (void (*)(uint32_t, uint32_t, uint32_t*))exec_at; /* set the kernel address */
     
-	debug_print("jumping to the kernel ... brace yourself!\n\r\0");
+//	debug_print("jumping to the kernel ... brace yourself!\n\r\0");
  
-        asm("mrc p15, 0, r1, c1, c0, 0"); /* Read Control Register configuration data*/
-	asm("bic r1, r1, #(0x1 << 12)");  /* Disable I Cache*/
-	asm("bic r1, r1, #(0x1 << 2)");   /* Disable D Cache*/
-	asm("mcr p15, 0, r1, c1, c0, 0"); /* Write Control Register configuration data*/
+//        asm("mrc p15, 0, r1, c1, c0, 0"); /* Read Control Register configuration data*/
+//	asm("bic r1, r1, #(0x1 << 12)");  /* Disable I Cache*/
+//	asm("bic r1, r1, #(0x1 << 2)");   /* Disable D Cache*/
+//	asm("mcr p15, 0, r1, c1, c0, 0"); /* Write Control Register configuration data*/
 
-     theKernel(0, machine_type, parm_at);    /* jump to kernel with register set */
+//     theKernel(0, machine_type, parm_at);    /* jump to kernel with register set */
 	
+
+//	printf("This is a string with no formatting\n\r\0");
+//	printf("This is a hex number: %x\n\r\0",0x00);
+//	printf("This is a decimal number: %x\n\r\0",512);
+
+	debug_print("Setting up timer next ...\n\r\0");
+	init_timer();	
+	debug_print("Setting up timer ended, looping ...\n\r\0");
+while(1){
+	debug_print("delaying for 1 second ...\n\r\0");
+	udelay(1000000);
+	debug_print("done!\n\r\0");
+}
+
     return 0;
 }

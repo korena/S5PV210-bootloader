@@ -16,6 +16,6 @@ dd iflag=dsync oflag=dsync if=./target_bin/BL1.bin.boot of=$device seek=1
 echo "writing bootloader ..."
 dd iflag=dsync oflag=dsync if=./target_bin/BL2.bin.img of=$device seek=33
 echo "clearing previous zImage..."
-dd if=/dev/zero of=$device seek=160 count=2700
+#dd if=/dev/zero of=$device seek=160 count=2700
 echo "writing kernel zImage ..."
-dd iflag=dsync oflag=dsync if=./kernel/images/active/zImage of=$device seek=160
+#dd iflag=dsync oflag=dsync if=./kernel/images/active/zImage of=$device seek=160

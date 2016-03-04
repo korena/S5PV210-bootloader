@@ -531,7 +531,7 @@ static int dm9000_rx(struct eth_device *netdev)
 			DM9000_DMP_PACKET(__func__ , rdptr, RxLen);
 
 			DM9000_DBG("passing packet to upper layer\n\r\0");
-			NetReceive(net_rx_packets[0], RxLen);
+			//NetReceive(net_rx_packets[0], RxLen);
 		}
 	}
 	return 0;
