@@ -41,3 +41,4 @@
 int init_timer(void);
 void udelay(int);
 int get_timer(int);
+extern void doNotOptimize(void);

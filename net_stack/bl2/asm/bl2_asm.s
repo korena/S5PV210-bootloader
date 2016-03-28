@@ -1,7 +1,7 @@
 .text
 .code 32
 .global _bl2_entry
-
+.global doNotOptimize
 .equ ram_load_address,          0x20000000
 
 _bl2_entry:
@@ -24,6 +24,10 @@ _bl2_entry:
 @        mov     lr, pc
 @        bx      ip
 
+/* Empty void doNotOptimize(void) label, for GCC. */
+doNotOptimize:
+        stmfd sp!,{lr}
+        ldmia sp!,{pc}
 
 .section .rodata
 starting_bl2_string:
