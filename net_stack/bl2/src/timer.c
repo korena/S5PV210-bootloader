@@ -8,16 +8,16 @@ int init_timer(void){
 	// enable all timer interrupt flags ...
 	*(INT_CSTAT) |= 0x1;
 	if(DEBUG_TIM){
-		printf("The INT_CSTAT register value is: 0x%x\n\r\0",*INT_CSTAT);	
-	//	printf("The TCFG register value is: 0x%x\n\r\0",*TCFG);	
-	//	printf("The TCON register value is: 0x%x\n\r\0",*TCON);	
+		print_format("The INT_CSTAT register value is: 0x%x\n\r\0",*INT_CSTAT);	
+	//	print_format("The TCFG register value is: 0x%x\n\r\0",*TCFG);	
+	//	print_format("The TCON register value is: 0x%x\n\r\0",*TCON);	
 	}
 	//perform software reset :
 	*TCFG |= (uint32_t) TCFG_TICK_SWRST_bit;
 	// wait for TCFG_TICK_SWRST_bit to auto clear ...
 	while(*(TCFG) & TCFG_TICK_SWRST_bit == TCFG_TICK_SWRST_bit){
 		if(DEBUG_TIM)
-			printf("waiting for software timer reset ...");	
+			print_format("waiting for software timer reset ...");	
 	}
 
 	// set the clock source to 00 for system clock (24MHz)
@@ -29,7 +29,7 @@ int init_timer(void){
 	// set tickgen sel to fractional divider (set it to 1)
 	*(TCFG) |= TCFG_TICKGEN_SEL_bit;
 	if(DEBUG_TIM)
-		printf("the value of TCFG register is:0x%x\n\r\0",*(TCFG));
+		print_format("the value of TCFG register is:0x%x\n\r\0",*(TCFG));
 
 	// set the tick integer count buffer register 
 	*(TICNTB) = (uint32_t) 11; // for 1us tick interval
@@ -39,7 +39,7 @@ int init_timer(void){
 	// wait for INT_CSTAT[2] write status bit to assert ...
 	while(((*(INT_CSTAT) & INT_CSTAT_TICNTBWS_bit) == INT_CSTAT_TICNTBWS_bit)){
 		// wait until this bit is set to 1 (meaning asserted) ...
-		printf("waiting for INT_CSTAT[2] to assert(0x%x) ...\n\r\0",*INT_CSTAT);
+		print_format("waiting for INT_CSTAT[2] to assert(0x%x) ...\n\r\0",*INT_CSTAT);
 	}
 
 	// set INT_CSTAT[2] to one (this is actually clearing!)
@@ -50,7 +50,7 @@ int init_timer(void){
 	// wait until TICNTB & TFCNTB are set ...
 
 	while(*(TICNTB) != (uint32_t)11 || *(TFCNTB) != 0)
-		printf("waiting to confirm integer and fractional set values\n\r\0");
+		print_format("waiting to confirm integer and fractional set values\n\r\0");
 
 	// starting the tick generation timer, this is done once only ...
 	*(TCON) |= TCON_TIMONOFF_bit ; // setting first bit to one
@@ -59,7 +59,7 @@ int init_timer(void){
 	// test to see if the timer is actually running ...
 
 	if(DEBUG_TIM)
-		printf("the value of TCON register is:0x%x\n\r\0",*(TCON));
+		print_format("the value of TCON register is:0x%x\n\r\0",*(TCON));
 
 	return 0;
 }
@@ -98,7 +98,7 @@ void udelay(int u){
 	};
 	*(INT_CSTAT) &= ~INT_CSTAT_ICNTBWS_bit;
 
-	//printf("INT_CSTAT register contains: 0x%x\n\r\0",*INT_CSTAT);
+	//print_format("INT_CSTAT register contains: 0x%x\n\r\0",*INT_CSTAT);
 	// do nothing while the interrupt counter expired interrupt status is 0
 	while((*(INT_CSTAT) & INT_CSTAT_INTCNTES_bit) != INT_CSTAT_INTCNTES_bit){
 		doNotOptimize();

@@ -8,7 +8,7 @@
 #define DM9000_ID		0x90000A46
 #define DM9000_PKT_MAX		1536	/* Received packet max size */
 #define DM9000_PKT_RDY		0x01	/* Packet ready to receive */
-
+#define DM9000_16BIT_DATA
 /* although the registers are 16 bit, they are 32-bit aligned.
  *  */
 
@@ -32,7 +32,7 @@
 #define DM9000_PAR             0x10
 #define DM9000_MAR             0x16
 
-#define DM9000_GPCR			0x1e
+#define DM9000_GPCR	       0x1e
 #define DM9000_GPR             0x1f
 #define DM9000_TRPAL           0x22
 #define DM9000_TRPAH           0x23
@@ -53,7 +53,7 @@
 #define DM9000_MRCMD           0xF2
 #define DM9000_MRRL            0xF4
 #define DM9000_MRRH            0xF5
-#define DM9000_MWCMDX			0xF6
+#define DM9000_MWCMDX		0xF6
 #define DM9000_MWCMD           0xF8
 #define DM9000_MWRL            0xFA
 #define DM9000_MWRH            0xFB
@@ -143,9 +143,13 @@
 void dm9000_write_srom_word(int offset, uint16_t val);
 void dm9000_read_srom_word(int offset, uint8_t *to);
 
+/** for testing .. remove me!!**/
+#define CONFIG_DM9000_DEBUG
+void dm9000_dump_regs(void);
+
 /**************** TINY210 *************/
 //TODO: find out what these values are from the documentation !!
-#define CONFIG_DM9000_BASE	0x16000000   
+#define CONFIG_DM9000_BASE	0x88000000   // SROMC_BANK1 base
 #define DM9000_IO	CONFIG_DM9000_BASE
 #define DM9000_DATA	(CONFIG_DM9000_BASE+4)
 

@@ -5,6 +5,7 @@ Adapted from http://www.simtec.co.uk/products/SWLINUX/files/booting_article.html
 #include <stdint.h>
 #include <string.h>
 #include "terminal.h"
+#include "dm9000.h"
 #include "timer.h"
 
 /* list of possible tags */
@@ -280,7 +281,9 @@ start_linux(void)
 
 	debug_print("Setting up timer next ...\n\r\0");
 	init_timer();	
-	debug_print("Setting up timer ended, looping ...\n\r\0");
+	debug_print("Setting up timer ended\n\r\0");
+	debug_print("About to dump registers from DM9000 ...\n\r\0");	
+	dm9000_dump_regs();
 while(1){
 	debug_print("delaying for 1 second ...\n\r\0");
 	udelay(1000000);

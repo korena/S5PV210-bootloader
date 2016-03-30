@@ -8,9 +8,9 @@ static char out[512] = {0};
 
 
 /*
- * (probably unsafe) implementation of printf 
+ * (probably unsafe) implementation of print_format 
  */
-int printf(const char* str, ...){
+int print_format(const char* str, ...){
 	va_list ap;
 	int i=0,j=0;
 	int arg;
