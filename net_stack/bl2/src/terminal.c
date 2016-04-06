@@ -8,7 +8,7 @@ static char out[512] = {0};
 
 
 /*
- * (probably unsafe) implementation of print_format 
+ * (probably unsafe) implementation of printf 
  */
 int print_format(const char* str, ...){
 	va_list ap;
@@ -174,4 +174,5 @@ while(format != NULL && *format != '\0'){
 }
 return -1;
 }
+
 

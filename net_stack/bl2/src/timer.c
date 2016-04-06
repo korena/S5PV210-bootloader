@@ -8,14 +8,14 @@ int init_timer(void){
 	// enable all timer interrupt flags ...
 	*(INT_CSTAT) |= 0x1;
 	if(DEBUG_TIM){
-		print_format("The INT_CSTAT register value is: 0x%x\n\r\0",*INT_CSTAT);	
+		print_format("The INT_CSTAT register value is: 0x%x\n\r",*INT_CSTAT);	
 	//	print_format("The TCFG register value is: 0x%x\n\r\0",*TCFG);	
 	//	print_format("The TCON register value is: 0x%x\n\r\0",*TCON);	
 	}
 	//perform software reset :
 	*TCFG |= (uint32_t) TCFG_TICK_SWRST_bit;
 	// wait for TCFG_TICK_SWRST_bit to auto clear ...
-	while(*(TCFG) & TCFG_TICK_SWRST_bit == TCFG_TICK_SWRST_bit){
+	while((*(TCFG) & TCFG_TICK_SWRST_bit) == TCFG_TICK_SWRST_bit){
 		if(DEBUG_TIM)
 			print_format("waiting for software timer reset ...");	
 	}
@@ -29,7 +29,7 @@ int init_timer(void){
 	// set tickgen sel to fractional divider (set it to 1)
 	*(TCFG) |= TCFG_TICKGEN_SEL_bit;
 	if(DEBUG_TIM)
-		print_format("the value of TCFG register is:0x%x\n\r\0",*(TCFG));
+		print_format("the value of TCFG register is:0x%x\n\r",*(TCFG));
 
 	// set the tick integer count buffer register 
 	*(TICNTB) = (uint32_t) 11; // for 1us tick interval
@@ -39,7 +39,7 @@ int init_timer(void){
 	// wait for INT_CSTAT[2] write status bit to assert ...
 	while(((*(INT_CSTAT) & INT_CSTAT_TICNTBWS_bit) == INT_CSTAT_TICNTBWS_bit)){
 		// wait until this bit is set to 1 (meaning asserted) ...
-		print_format("waiting for INT_CSTAT[2] to assert(0x%x) ...\n\r\0",*INT_CSTAT);
+		print_format("waiting for INT_CSTAT[2] to assert(0x%x) ...\n\r",*INT_CSTAT);
 	}
 
 	// set INT_CSTAT[2] to one (this is actually clearing!)
@@ -50,7 +50,7 @@ int init_timer(void){
 	// wait until TICNTB & TFCNTB are set ...
 
 	while(*(TICNTB) != (uint32_t)11 || *(TFCNTB) != 0)
-		print_format("waiting to confirm integer and fractional set values\n\r\0");
+		print_format("waiting to confirm integer and fractional set values\n\r");
 
 	// starting the tick generation timer, this is done once only ...
 	*(TCON) |= TCON_TIMONOFF_bit ; // setting first bit to one
@@ -59,7 +59,7 @@ int init_timer(void){
 	// test to see if the timer is actually running ...
 
 	if(DEBUG_TIM)
-		print_format("the value of TCON register is:0x%x\n\r\0",*(TCON));
+		print_format("the value of TCON register is:0x%x\n\r",*(TCON));
 
 	return 0;
 }

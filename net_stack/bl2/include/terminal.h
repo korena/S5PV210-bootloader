@@ -16,6 +16,6 @@ extern void uart_print_hex(uint32_t integer);
 
 
 int print_format(const char* fmt, ...); // MISRA C hates this :-D
-char *strcpy(char *strDest, const char *strSrc);
+//char *strcpy(char *strDest, const char *strSrc);
 int printnum (char *__restrict__ s, size_t maxlen, const char *__restrict__ format, uint32_t num);
 #endif

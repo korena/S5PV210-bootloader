@@ -140,18 +140,15 @@
 
 
 /**************** function prototypes ********************/
+int dm9000_initialize(void);
 void dm9000_write_srom_word(int offset, uint16_t val);
 void dm9000_read_srom_word(int offset, uint8_t *to);
 
-/** for testing .. remove me!!**/
 #define CONFIG_DM9000_DEBUG
-void dm9000_dump_regs(void);
 
 /**************** TINY210 *************/
-//TODO: find out what these values are from the documentation !!
 #define CONFIG_DM9000_BASE	0x88000000   // SROMC_BANK1 base
 #define DM9000_IO	CONFIG_DM9000_BASE
 #define DM9000_DATA	(CONFIG_DM9000_BASE+4)
-
 
 #endif

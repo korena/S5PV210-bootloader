@@ -7,6 +7,7 @@ Adapted from http://www.simtec.co.uk/products/SWLINUX/files/booting_article.html
 #include "terminal.h"
 #include "dm9000.h"
 #include "timer.h"
+#include "net.h"
 
 /* list of possible tags */
 #define ATAG_NONE       0x00000000
@@ -227,7 +228,7 @@ static uint32_t load_image(uint32_t block_start, uint32_t* load_address,uint16_t
 	copy_mmc_to_mem copy_func = (copy_mmc_to_mem) (*(uint32_t *) 0xD0037F98); //SdMccCopyToMem function from iROM documentation
 	uint32_t ret = copy_func(0,block_start, num_of_blocks,load_address, 0);
 	if(ret == 0){
-		debug_print("Copying failed :-(\n\r\0");
+		debug_print("Copying failed :-(\n\r");
 	}
 	return ret;
 }
@@ -249,7 +250,7 @@ start_linux(void)
 	uart_print_address(exec_at);
    	ret = load_image((uint32_t)ZIMAGE_START_BLOCK_NUMBER,(uint32_t*)exec_at,(uint16_t)2666);    /* copy image into RAM */
 
-    debug_print("done copying linux image ...\n\r\0");
+    debug_print("done copying linux image ...\n\r");
 
 //    debug_print("about to copy ramdisk image ...");
 
@@ -257,7 +258,7 @@ start_linux(void)
 
 //    debug_print("done copying ramdisk image ...");
 
-    debug_print("setting up ATAGS ...\n\r\0");
+    debug_print("setting up ATAGS ...\n\r");
 
     setup_tags(parm_at);                    /* sets up parameters */
 
@@ -275,19 +276,15 @@ start_linux(void)
 //     theKernel(0, machine_type, parm_at);    /* jump to kernel with register set */
 	
 
-//	printf("This is a string with no formatting\n\r\0");
-//	printf("This is a hex number: %x\n\r\0",0x00);
-//	printf("This is a decimal number: %x\n\r\0",512);
-
-	debug_print("Setting up timer next ...\n\r\0");
+	debug_print("Setting up timer next ...\n\r");
 	init_timer();	
-	debug_print("Setting up timer ended\n\r\0");
-	debug_print("About to dump registers from DM9000 ...\n\r\0");	
-	dm9000_dump_regs();
+	debug_print("About to initialize ethernet networking ...\n\r");	
+
+	net_loop(ARP);
 while(1){
-	debug_print("delaying for 1 second ...\n\r\0");
+	debug_print("delaying for 1 second ...\n\r");
 	udelay(1000000);
-	debug_print("done!\n\r\0");
+	debug_print("done!\n\r");
 }
 
     return 0;
