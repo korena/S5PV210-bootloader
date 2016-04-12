@@ -72,9 +72,10 @@ struct eth_ops {
 /*prototypes*/
 int eth_send(void *packet,int length);
 int eth_rx(void);
+void eth_halt(void);
 int eth_register(struct eth_device *dev);
 
 /*ethernet device through which operations are performed*/
-static struct eth_device  *eth_current;
+struct eth_device  *eth_current;
 
 #endif /* _ETH_H_*/

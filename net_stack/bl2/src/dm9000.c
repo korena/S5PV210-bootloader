@@ -77,12 +77,11 @@ static void DM9000_iow(int reg, uint8_t value);
 #define DM9000_DMP_PACKET(func,packet,length)  \
 	do { \
 		int i; 							\
-		uart_print("some function, figure it out yourself\n\r");					\
 		print_format(": length: %d\n",length);		\
 		for (i = 0; i < length; i++) {				\
 			if (i % 8 == 0){					\
-			uart_print(func);				\
-			print_format(": %x: ", i);}	\
+				uart_print(func);				\
+				print_format(": %x: ", i);}	\
 			print_format("%x ", ((unsigned char *) packet)[i]);	\
 		} print_format("\n");						\
 	} while(0)
@@ -135,17 +134,56 @@ static board_info_t dm9000_info;
 dm9000_dump_regs(void)
 {
 	DM9000_DBG("dumping registers .. \n\r");
-	DM9000_DBG("NCR   (0x00): %x\n\r", DM9000_ior(0));
-	DM9000_DBG("NSR   (0x01): %x\n\r", DM9000_ior(1));
-	DM9000_DBG("TCR   (0x02): %x\n\r", DM9000_ior(2));
-	DM9000_DBG("TSRI  (0x03): %x\n\r", DM9000_ior(3));
-	DM9000_DBG("TSRII (0x04): %x\n\r", DM9000_ior(4));
-	DM9000_DBG("RCR   (0x05): %x\n\r", DM9000_ior(5));
+//	DM9000_DBG("NCR   (0x00): %x\n\r", DM9000_ior(0));
+//	DM9000_DBG("NSR   (0x01): %x\n\r", DM9000_ior(1));
+//	DM9000_DBG("TCR   (0x02): %x\n\r", DM9000_ior(2));
+//	DM9000_DBG("TSRI  (0x03): %x\n\r", DM9000_ior(3));
+//	DM9000_DBG("TSRII (0x04): %x\n\r", DM9000_ior(4));
+//	DM9000_DBG("RCR   (0x05): %x\n\r", DM9000_ior(5));
 	DM9000_DBG("RSR   (0x06): %x\n\r", DM9000_ior(6));
-	DM9000_DBG("ISR   (0xFE): %x\n\r", DM9000_ior(DM9000_ISR));
-	DM9000_DBG("BPTR  (0xXX): %x\n\r", DM9000_ior(DM9000_BPTR));
+//	DM9000_DBG("ISR   (0xFE): %x\n\r", DM9000_ior(DM9000_ISR));
+//	DM9000_DBG("IMR   (0xFF): %x\n\r", DM9000_ior(DM9000_IMR));
+//	DM9000_DBG("FCR   (0x0A): %x\n\r", DM9000_ior(DM9000_FCR));
 	DM9000_DBG("done dumping registers \n\r");
 }
+
+void dm9000_dump_eth_frame(uint8_t *packet,int len){
+	print_format("ethernet header print ------\n\r");
+	print_format("1 byte is: 0x%x\n\r",packet[0]);
+	print_format("2 byte is: 0x%x\n\r",packet[1]);
+	print_format("3 byte is: 0x%x\n\r",packet[2]);
+	print_format("4 byte is: 0x%x\n\r",packet[3]);
+	print_format("5 byte is: 0x%x\n\r",packet[4]);
+	print_format("6 byte is: 0x%x\n\r",packet[5]);
+	print_format("7 byte is: 0x%x\n\r",packet[6]);
+	print_format("8 byte is: 0x%x\n\r",packet[7]);
+	print_format("9 byte is: 0x%x\n\r",packet[8]);
+	print_format("10 byte is: 0x%x\n\r",packet[9]);
+	print_format("11 byte is: 0x%x\n\r",packet[10]);
+	print_format("12 byte is: 0x%x\n\r",packet[11]);
+	print_format("13 byte is: 0x%x\n\r",packet[12]);
+	print_format("14 byte is: 0x%x\n\r",packet[13]);
+	print_format("15 byte is: 0x%x\n\r",packet[14]);
+	print_format("16 byte is: 0x%x\n\r",packet[15]);
+	print_format("17 byte is: 0x%x\n\r",packet[16]);
+	print_format("18 byte is: 0x%x\n\r",packet[17]);
+	print_format("19 byte is: 0x%x\n\r",packet[18]);
+	print_format("20 byte is: 0x%x\n\r",packet[19]);
+	print_format("21 byte is: 0x%x\n\r",packet[20]);
+//	int fx = 0;
+//	print_format("The destination address is:\t");
+//	for(fx=8;fx<15;fx++){
+//	print_format(" 0x%x", packet[fx]);  // should convert (ntoh)
+//	}
+//	print_format("\n\rThe source address is:\t");
+//	for(fx=16;fx<22;fx++){
+//	print_format(" 0x%x", packet[fx]);
+//	}
+//	// protocol type
+//	print_format("\n\rEthernet type word is:0x%x 0x%x\n\r",packet[17],packet[16]);	
+	print_format("ethernet header print end ------\n\r");
+}
+
 #endif
 
 static void dm9000_outblk_8bit(volatile void *data_ptr, int count)
@@ -184,16 +222,20 @@ static void dm9000_inblk_16bit(void *data_ptr, int count)
 	int i;
 	uint32_t tmplen = (count + 1) / 2;
 
-	for (i = 0; i < tmplen; i++)
+	for (i = 0; i< DM9000_PKT_MAX; i++){
 		((uint16_t *) data_ptr)[i] = DM9000_inw(DM9000_DATA);
+		print_format("packet data is: 0x%x\n\r",((uint16_t*)data_ptr)[i]);
+		udelay(10);
+	}
 }
 static void dm9000_inblk_32bit(void *data_ptr, int count)
 {
 	int i;
 	uint32_t tmplen = (count + 3) / 4;
 
-	for (i = 0; i < tmplen; i++)
+	for (i = 0; i < tmplen; i++){
 		((uint32_t *) data_ptr)[i] = DM9000_inl(DM9000_DATA);
+	}
 }
 
 
@@ -210,16 +252,14 @@ static void dm9000_rx_status_32bit(uint16_t *RxStatus, uint16_t *RxLen)
 	*RxLen = (uint16_t) (tmpdata >> 16);
 }
 
+
 static void dm9000_rx_status_16bit(uint16_t *RxStatus, uint16_t *RxLen)
 {
-	uint32_t tmpdata;
-
 	DM9000_outb(DM9000_MRCMD, DM9000_IO);
-
-	tmpdata = DM9000_inw(DM9000_DATA);
-	/* We'll assume no endianness business is required, seems safe enough ...*/
-	*RxStatus = (uint16_t) (tmpdata & 0xff); // discarding higher bits, cause I'm paranoid like that 
-	*RxLen = (uint16_t) (tmpdata >> 16);
+	udelay(20);
+	*RxStatus = (uint16_t) ntohs(DM9000_inw(DM9000_DATA)); // reads first word, including 0x1 as first byte
+	udelay(20);
+	*RxLen = (uint16_t) ntohs(DM9000_inw(DM9000_DATA));
 }
 
 static void dm9000_rx_status_8bit(uint16_t *RxStatus, uint16_t *RxLen)
@@ -257,8 +297,20 @@ int dm9000_probe(void)
 	}
 }
 
+
+static void dm9000_start(void){
+	/* Activate DM9000 */
+	/* RX enable */
+	DM9000_iow(DM9000_RCR, RCR_DIS_LONG | RCR_DIS_CRC | RCR_RXEN);
+	/* Enable TX/RX interrupt mask */
+	DM9000_iow(DM9000_IMR, IMR_PAR);
+	/*Enable flow control*/
+	//	DM9000_iow(DM9000_FCR, 0x1);
+}
+
+
 /* General Purpose dm9000 reset routine */
-	static void dm9000_reset(void)
+static void dm9000_reset(void)
 {
 	DM9000_DBG("resetting DM9000\n\r");
 
@@ -301,7 +353,7 @@ static int dm9000_init(struct eth_device *dev)
 	struct board_info *db = &dm9000_info;
 
 	//uart_print(__func__);
-print_format("Reseting ethernet device ...\n\r");
+	print_format("Reseting ethernet device ...\n\r");
 	/* RESET device */
 	dm9000_reset();
 	print_format("Done resetting device, probing ... \n\r");
@@ -354,14 +406,13 @@ print_format("Reseting ethernet device ...\n\r");
 	/* Flow Control : High/Low Water */
 	DM9000_iow(DM9000_FCTR, FCTR_HWOT(3) | FCTR_LWOT(8));
 	/* SH FIXME: This looks strange! Flow Control */
-	DM9000_iow(DM9000_FCR, 0x0);
+	DM9000_iow(DM9000_FCR, 0x1);
 	/* Special Mode */
 	DM9000_iow(DM9000_SMCR, 0);
 	/* clear TX status */
 	DM9000_iow(DM9000_NSR, NSR_WAKEST | NSR_TX2END | NSR_TX1END);
 	/* Clear interrupt status */
 	DM9000_iow(DM9000_ISR, ISR_ROOS | ISR_ROS | ISR_PTS | ISR_PRS);
-	//FIXME: print pointer/address ?? ...
 	print_format("MAC : [ ");	
 	for(i = 0;i<6;i++)
 		print_format(":%x:",(dev->enetaddr)[i]);
@@ -369,6 +420,7 @@ print_format("Reseting ethernet device ...\n\r");
 	/* fill device MAC address registers */
 	for (i = 0, oft = DM9000_PAR; i < 6; i++, oft++)
 		DM9000_iow(oft, dev->enetaddr[i]);
+	/*Multicast*/
 	for (i = 0, oft = 0x16; i < 8; i++, oft++)
 		DM9000_iow(oft, 0xff);
 
@@ -376,6 +428,12 @@ print_format("Reseting ethernet device ...\n\r");
 	print_format("reading MAC from hardware ...\n\r");
 	for (i = 0, oft = 0x10; i < 6; i++, oft++)
 		DM9000_DBG("%x\n\r:", DM9000_ior(oft));
+
+	/* read back multicast address, just to be sure*/
+	print_format("reading multicast from hardware ...\n\r");
+	for(i = 0,oft=0x16; i<8;i++,oft++){
+		DM9000_DBG("%x\n\r:", DM9000_ior(oft));
+	}
 
 	/* Activate DM9000 */
 	/* RX enable */
@@ -429,7 +487,7 @@ static int dm9000_send(struct eth_device *netdev, volatile void *packet,
 	int tmo;
 	struct board_info *db = &dm9000_info;
 
-	DM9000_DMP_PACKET(__func__ , packet, length);
+	//DM9000_DMP_PACKET(__func__ , packet, length);
 
 	DM9000_iow(DM9000_ISR, IMR_PTM); /* Clear Tx bit in ISR */
 
@@ -467,7 +525,7 @@ static int dm9000_send(struct eth_device *netdev, volatile void *packet,
  *     */
 static void dm9000_halt(struct eth_device *netdev)
 {
-//	uart_print(__func__);
+	//	uart_print(__func__);
 
 	/* RESET devie */
 	dm9000_phy_write(0, 0x8000);	/* PHY RESET */
@@ -482,13 +540,14 @@ static void dm9000_halt(struct eth_device *netdev)
 static int dm9000_rx(struct eth_device *netdev)
 {
 	uint8_t rxbyte, *rdptr = (uint8_t *) net_rx_packets[0];
-	uint16_t RxStatus, RxLen = 0;
+	uint16_t RxStatus=0, RxLen = 0;
 	struct board_info *db = &dm9000_info;
 
+	//	print_format("dm9000_rx called ... \n\r");
 	/* Check packet ready or not, we must check
 	 * 	   the ISR status first for DM9000A */
+
 	if (!(DM9000_ior(DM9000_ISR) & 0x01)){ /* Rx-ISR bit must be set. */
-		DM9000_DBG("RX-ISR bit is not set! Aborting\n\r");
 		return 0;
 	}
 
@@ -496,39 +555,52 @@ static int dm9000_rx(struct eth_device *netdev)
 
 	/* There is _at least_ 1 package in the fifo, read them all */
 	for (;;) {
-		DM9000_ior(DM9000_MRCMDX);	/* Dummy read */
-
+		print_format("Dummy read result: 0x%x\n\r",DM9000_ior(DM9000_MRCMDX));	/* Dummy read */
+		//udelay(20);
 		/* Get most updated data,
 		 * 		   only look at bits 0:1, See application notes DM9000 */
 		rxbyte = DM9000_inb(DM9000_DATA) & 0x03;
 
 		/* Status check: this byte must be 0 or 1 */
 		if (rxbyte > DM9000_PKT_RDY) {
-			DM9000_iow(DM9000_RCR, 0x00);	/* Stop Device */
-			DM9000_iow(DM9000_ISR, 0x80);	/* Stop INT request */
 			print_format("DM9000 error: status check fail: 0x%x\n\r",
 					rxbyte);
+			DM9000_iow(DM9000_RCR, 0x00);	/* Stop Device */
+			DM9000_iow(DM9000_ISR, 0x80);	/* Stop INT request */
+			// reset device ...
+			dm9000_reset();
+			dm9000_start();
 			return 0;
 		}
 
-		if (rxbyte != DM9000_PKT_RDY)
+		if (rxbyte != DM9000_PKT_RDY){
+			print_format("no packets received\n\r");
+			dm9000_dump_regs();
 			return 0; /* No packet received, ignore */
+		}
+
+
 
 		DM9000_DBG("receiving packet\n\r");
-
+		//udelay(20);
 		/* A packet ready now  & Get status/length */
 		(db->rx_status)(&RxStatus, &RxLen);
 
-		DM9000_DBG("rx status: 0x%x rx len: %d\n\r", RxStatus, RxLen);
+		DM9000_DBG("rx status: 0x%x rx len: %d\n\r",(uint32_t) RxStatus,(uint32_t) RxLen);
 
 		/* Move data from DM9000 */
 		/* Read received packet from RX SRAM */
 		(db->inblk)(rdptr, RxLen);
 
+		DM9000_DBG("net_rx_packets filled ...\n\r");
+
 		if ((RxStatus & 0xbf00) || (RxLen < 0x40)
 				|| (RxLen > DM9000_PKT_MAX)) {
 			if (RxStatus & 0x100) {
 				print_format("rx fifo error\n\r");
+				/*debugging ... I want to actually see what's received !!!*/
+				dm9000_dump_regs();
+				dm9000_dump_eth_frame(rdptr,RxLen);
 			}
 			if (RxStatus & 0x200) {
 				print_format("rx crc error\n\r");
@@ -539,10 +611,11 @@ static int dm9000_rx(struct eth_device *netdev)
 			if (RxLen > DM9000_PKT_MAX) {
 				print_format("rx length too big\n\r");
 				dm9000_reset();
+				dm9000_start();
+				//	dm9000_dump_regs();
 			}
 		} else {
-			DM9000_DMP_PACKET(__func__ , rdptr, RxLen);
-
+			//	DM9000_DMP_PACKET(__func__ , rdptr, RxLen);
 			DM9000_DBG("passing packet to upper layer\n\r");
 			return RxLen;
 		}
@@ -556,7 +629,6 @@ static int dm9000_rx(struct eth_device *netdev)
 #if !defined(CONFIG_DM9000_NO_SROM)
 void dm9000_read_srom_word(int offset, uint8_t *to)
 {
-	int i = 0;
 	DM9000_iow(DM9000_EPAR, offset);
 	DM9000_iow(DM9000_EPCR, 0x4);
 	udelay(8000);
@@ -595,7 +667,7 @@ static void dm9000_get_enetaddr(struct eth_device *dev)
 /*
  *    Read a byte from I/O port
  *    */
-	static uint8_t DM9000_ior(int reg)
+static uint8_t DM9000_ior(int reg)
 {
 	DM9000_outb(reg, DM9000_IO);
 	return DM9000_inb(DM9000_DATA);
@@ -613,7 +685,7 @@ static void DM9000_iow(int reg, uint8_t value)
 /*
  *    Read a word from phyxcer
  *    */
-	static uint16_t dm9000_phy_read(int reg)
+static uint16_t dm9000_phy_read(int reg)
 {
 	uint16_t val;
 
@@ -651,11 +723,11 @@ static void dm9000_phy_write(int reg, uint16_t value)
 int dm9000_initialize(void)
 {
 	int i;
-
+	int regStat;
 	struct eth_device *dev = &(dm9000_info.netdev);
 
 	/*Fill MAC address ...*/	
-	
+
 	for(i = 0;i<6;i++)
 		dev->enetaddr[i] = net_ethaddr[i];
 
@@ -665,16 +737,38 @@ int dm9000_initialize(void)
 		dev->send = dm9000_send;
 		dev->recv = dm9000_rx;
 		sprintf((char*)dev->name, "dm9000");
-		eth_register(dev);
-		return 0;
+
+		regStat = eth_register(dev);
+
+		switch(regStat){
+			case 0:{
+				       print_format("eth_current successfully registered\n\r");
+				       return 0;
+			       }
+			case 1:{ 
+				       print_format("dev was null, eth_current not registered\n\r");
+				       return 1;
+			       }
+			case 2:{ 
+				       print_format("dev name too long, eth_current not registered\n\r");
+				       return 2;
+			       }
+			case 3:{ 
+				       print_format("eth_current is null, eth_current not registered\n\r");// should not happen
+				       return 3;
+			       }
+			default:
+			       return 4;
+
+		}
 	}else{
-	print_format("Failed to initialize dm9000\n\r");
-	return -1;
+		print_format("Failed to initialize dm9000\n\r");
+		return -1;
 	}
 
-//	dev->ops->start = dm9000_init;
-//	dev->ops->send  = dm9000_send;
-//	dev->ops->stop   = dm9000_halt;
-//	dev->ops->recv = dm9000_rx;
+	//	dev->ops->start = dm9000_init;
+	//	dev->ops->send  = dm9000_send;
+	//	dev->ops->stop   = dm9000_halt;
+	//	dev->ops->recv = dm9000_rx;
 
 }

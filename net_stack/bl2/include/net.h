@@ -213,8 +213,8 @@ struct ip_udp_hdr {
 #define PKTALIGN	ARCH_DMA_MINALIGN
 //this value is just an assumption, we'll see if it fails
 
-unsigned char *net_rx_packets[PKTBUFSRX];
-
+uint8_t *net_rx_packets[PKTBUFSRX];
+extern unsigned char 	*net_rx_packet;
 #define CONFIG_SERVER_IP
 
 #define VLAN_NONE	4095			/* untagged */

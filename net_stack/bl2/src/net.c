@@ -129,7 +129,7 @@ void net_init(void)
 		int i;
 
 		net_ip = string_to_ip("10.0.0.2");	 
-		net_server_ip = string_to_ip("10.0.0.1");
+		net_server_ip = string_to_ip("10.0.0.20");
 		net_tx_packet = &net_pkt_buf[0] + (PKTALIGN - 1);
 		net_tx_packet -= (unsigned long)net_tx_packet % PKTALIGN;
 		for (i = 0; i < PKTBUFSRX; i++) {
@@ -145,12 +145,14 @@ void net_init(void)
 	}
 
 	/*initialize ethernet device*/
-	if(dm9000_initialize() == -1){
+	if(dm9000_initialize() == 0){
+		/* device is initialized! register generic listener for requests...*/
+		print_format("dm9000_initialization complete.\n\r");
+		eth_current->state = ETH_STATE_ACTIVE;
+		return;
+	}else{
 		print_format("net_init failed at ethernet device initialization, aborting.\n\r");
 		return; 
-	}else{
-		/* device is initialized! register generic listener for requests...*/
-
 	}
 
 }
@@ -241,6 +243,7 @@ restart:
 	 *	someone sets `net_state' to a state that terminates.
 	 */
 	print_format("looping and polling ethernet recv ...\n\r");
+	int ethStatus ;
 	for (;;) {
 
 		/*
@@ -249,7 +252,7 @@ restart:
 		 *	Most drivers return the most recent packet size, but not
 		 *	errors that may have happened.
 		 */
-		eth_rx();
+		ethStatus = eth_rx();
 
 		//		if (arp_timeout_check() > 0) {
 		//		    time_start = get_timer(0);
@@ -337,6 +340,23 @@ void net_process_received_packet(unsigned char *in_packet, int len)
 		mynvlanid = VLAN_NONE;
 
 	eth_proto = ntohs(et->et_protlen);
+
+
+	// remove this block ...
+	print_format("destination and source IPs\n\r");
+	int fx = 0;	
+	char dest[7],src[7];
+	for(fx=0;fx<6;fx++){
+		dest[fx] = ntohs(et->et_dest[fx]);
+		dest[fx] = '\0';
+	}	
+	print_format(dest);
+	for(fx=0;fx<6;fx++){
+		src[fx] = ntohs(et->et_src[fx]);
+		src[fx] = '\0';
+	}	
+	print_format(src);
+	// end remove block ...
 
 
 	if (eth_proto < 1514) {

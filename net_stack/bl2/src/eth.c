@@ -8,13 +8,20 @@
 
 int eth_register(struct eth_device *dev)
 {
+	if(dev == NULL)
+		return 1;
+
 	if(strlen((const char*)dev->name) > sizeof(dev->name)){
 		print_format("error registering ethernet device, name too long\n\r");
 		print_format("length of name:%d\n\r",sizeof(dev->name));
-	return 1;
+	return 2;
 	}
+	
 	dev->state = ETH_STATE_INIT;
 	eth_current = dev;
+	if(eth_current == NULL)
+		return 3;
+
 	return 0;
 }
 
@@ -54,11 +61,15 @@ int eth_rx(void)
 	int ret;
 	int i;
 
-	if (!eth_current)
+	if (!eth_current){
+		print_format("eth_current is NULL .. aborting eth_rx\n\r");
      		return -ENODEV;
+	}
 
-	if (!(eth_current->state == ETH_STATE_ACTIVE))
+	if (!(eth_current->state == ETH_STATE_ACTIVE)){
+		print_format("Device status is not ACTIVE .. aborting eth_rx\n\r");
      		return -EINVAL;
+	}
 
 	/* Process up to 32 packets at one time */
 	for (i = 0; i < 32; i++) {
@@ -66,11 +77,12 @@ int eth_rx(void)
 		 *the ethernet device will place received packets 
 		 *there.
 		 * */
+//		print_format("calling recv of ethernet device ...\n\r");
 		ret = eth_current->recv(eth_current);
 		if (ret > 0)
-			net_process_received_packet(net_rx_packets, ret);
+			net_process_received_packet(net_rx_packets[0], ret);
 		if (ret >= 0 && 1)
-			print_format("should clear rx space here?\n\r");
+		//	print_format("should clear rx space here?\n\r");
 		if (ret <= 0)
 			break;
 	}
