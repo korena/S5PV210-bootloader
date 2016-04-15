@@ -122,10 +122,11 @@ static board_info_t dm9000_info;
 //#define DM9000_inl(r) readl((volatile uint32_t *)(r))
 //#else
 #define DM9000_outb(d, r) __raw_writeb(d, r)
-#define DM9000_outw(d, r) __raw_writew(d, r)
+#define DM9000_outw(d, r) __raw_writehw(d, r)
 #define DM9000_outl(d, r) __raw_writel(d, r)
 #define DM9000_inb(r) __raw_readb(r)
-#define DM9000_inw(r) __raw_readw(r)
+//#define __raw_readw(a)		(*(volatile uint16_t *)(a))
+#define DM9000_inw(r) __raw_readhw(r)
 #define DM9000_inl(r) __raw_readl(r)
 //#endif
 
@@ -134,16 +135,17 @@ static board_info_t dm9000_info;
 dm9000_dump_regs(void)
 {
 	DM9000_DBG("dumping registers .. \n\r");
-//	DM9000_DBG("NCR   (0x00): %x\n\r", DM9000_ior(0));
-//	DM9000_DBG("NSR   (0x01): %x\n\r", DM9000_ior(1));
-//	DM9000_DBG("TCR   (0x02): %x\n\r", DM9000_ior(2));
-//	DM9000_DBG("TSRI  (0x03): %x\n\r", DM9000_ior(3));
-//	DM9000_DBG("TSRII (0x04): %x\n\r", DM9000_ior(4));
-//	DM9000_DBG("RCR   (0x05): %x\n\r", DM9000_ior(5));
+	DM9000_DBG("NCR   (0x00): %x\n\r", DM9000_ior(0));
+	DM9000_DBG("NSR   (0x01): %x\n\r", DM9000_ior(1));
+	DM9000_DBG("TCR   (0x02): %x\n\r", DM9000_ior(2));
+	DM9000_DBG("TSRI  (0x03): %x\n\r", DM9000_ior(3));
+	DM9000_DBG("TSRII (0x04): %x\n\r", DM9000_ior(4));
+	DM9000_DBG("RCR   (0x05): %x\n\r", DM9000_ior(5));
 	DM9000_DBG("RSR   (0x06): %x\n\r", DM9000_ior(6));
-//	DM9000_DBG("ISR   (0xFE): %x\n\r", DM9000_ior(DM9000_ISR));
-//	DM9000_DBG("IMR   (0xFF): %x\n\r", DM9000_ior(DM9000_IMR));
-//	DM9000_DBG("FCR   (0x0A): %x\n\r", DM9000_ior(DM9000_FCR));
+	DM9000_DBG("BPTR  (0x08): %x\n\r", DM9000_ior(8));
+      	DM9000_DBG("ISR   (0xFE): %x\n\r", DM9000_ior(DM9000_ISR));
+	DM9000_DBG("IMR   (0xFF): %x\n\r", DM9000_ior(DM9000_IMR));
+	DM9000_DBG("FCR   (0x0A): %x\n\r", DM9000_ior(DM9000_FCR));
 	DM9000_DBG("done dumping registers \n\r");
 }
 
@@ -199,7 +201,7 @@ static void dm9000_outblk_16bit(volatile void *data_ptr, int count)
 	uint32_t tmplen = (count + 1) / 2;
 
 	for (i = 0; i < tmplen; i++)
-		DM9000_outw(((uint16_t *) data_ptr)[i], DM9000_DATA);
+		DM9000_outw(((uint16_t *) data_ptr)[i], DM9000_DATA-2);
 }
 static void dm9000_outblk_32bit(volatile void *data_ptr, int count)
 {
@@ -217,15 +219,15 @@ static void dm9000_inblk_8bit(void *data_ptr, int count)
 		((uint8_t *) data_ptr)[i] = DM9000_inb(DM9000_DATA);
 }
 
+
+
 static void dm9000_inblk_16bit(void *data_ptr, int count)
 {
 	int i;
 	uint32_t tmplen = (count + 1) / 2;
 
-	for (i = 0; i< DM9000_PKT_MAX; i++){
+	for (i = 0; i< tmplen; i++){
 		((uint16_t *) data_ptr)[i] = DM9000_inw(DM9000_DATA);
-		print_format("packet data is: 0x%x\n\r",((uint16_t*)data_ptr)[i]);
-		udelay(10);
 	}
 }
 static void dm9000_inblk_32bit(void *data_ptr, int count)
@@ -256,10 +258,9 @@ static void dm9000_rx_status_32bit(uint16_t *RxStatus, uint16_t *RxLen)
 static void dm9000_rx_status_16bit(uint16_t *RxStatus, uint16_t *RxLen)
 {
 	DM9000_outb(DM9000_MRCMD, DM9000_IO);
-	udelay(20);
-	*RxStatus = (uint16_t) ntohs(DM9000_inw(DM9000_DATA)); // reads first word, including 0x1 as first byte
-	udelay(20);
-	*RxLen = (uint16_t) ntohs(DM9000_inw(DM9000_DATA));
+//	udelay(8000);
+	*RxStatus = (uint16_t) (DM9000_inw(DM9000_DATA)); // reads first half word, including 0x1 as first byte
+	*RxLen = (uint16_t) DM9000_inw(DM9000_DATA);
 }
 
 static void dm9000_rx_status_8bit(uint16_t *RxStatus, uint16_t *RxLen)
@@ -313,12 +314,21 @@ static void dm9000_start(void){
 static void dm9000_reset(void)
 {
 	DM9000_DBG("resetting DM9000\n\r");
-
+//	(*(uint32_t*)SROMC_BW) |= ((1 << 0) | (1 << 2) | (1 << 3)) << 4; // switching to 16 bit bus on SROM bank 1 
+       __raw_writel((0x1 << S5P_SROM_BCX__PMC__SHIFT) |
+   		    (0x9 << S5P_SROM_BCX__TACP__SHIFT) |
+                    (0xc << S5P_SROM_BCX__TCAH__SHIFT) |
+                    (0x1 << S5P_SROM_BCX__TCOH__SHIFT) |
+                    (0x6 << S5P_SROM_BCX__TACC__SHIFT) |
+                    (0x1 << S5P_SROM_BCX__TCOS__SHIFT) |
+                    (0x1 << S5P_SROM_BCX__TACS__SHIFT), 0xE8000008);
+       //udelay(8000);
 	/* Reset DM9000,
 	 * 	   see DM9000 Application Notes V1.22 Jun 11, 2004 page 29 */
 
 	/* DEBUG: Make all GPIO0 outputs, all others inputs */
-	DM9000_iow(DM9000_GPCR, GPCR_GPIO0_OUT);
+	DM9000_iow(DM9000_GPCR, GPCR_GPIO0_OUT); //this is in 8-bit mode, why is it here ?? brain damaged documentation ('-_-)
+
 	/* Step 1: Power internal PHY by writing 0 to GPIO0 pin */
 	DM9000_iow(DM9000_GPR, 0);
 	/* Step 2: Software reset */
@@ -339,8 +349,10 @@ static void dm9000_reset(void)
 
 	/* Check whether the ethernet controller is present */
 	if ((DM9000_ior(DM9000_PIDL) != 0x0) ||
-			(DM9000_ior(DM9000_PIDH) != 0x90))
-		print_format("ERROR: resetting DM9000 -> not responding\n\r");
+			(DM9000_ior(DM9000_PIDH) != 0x90)){
+		print_format("ERROR: resetting DM9000 -> not responding \n\r(PIDH = 0x%x,PIDL = 0x%x)\n\r");
+		dm9000_dump_regs();
+	}
 }
 
 /* Initialize dm9000 board
@@ -368,7 +380,7 @@ static int dm9000_init(struct eth_device *dev)
 	/* Auto-detect 8/16/32 bit mode, ISR Bit 6+7 indicate bus width */
 
 	io_mode = DM9000_ior(DM9000_ISR) >> 6;
-
+	dm9000_dump_regs();
 	switch (io_mode) {
 		case 0x0:  /* 16-bit mode */
 			print_format("DM9000: running in 16 bit mode\n\r");
@@ -543,7 +555,6 @@ static int dm9000_rx(struct eth_device *netdev)
 	uint16_t RxStatus=0, RxLen = 0;
 	struct board_info *db = &dm9000_info;
 
-	//	print_format("dm9000_rx called ... \n\r");
 	/* Check packet ready or not, we must check
 	 * 	   the ISR status first for DM9000A */
 
@@ -555,12 +566,10 @@ static int dm9000_rx(struct eth_device *netdev)
 
 	/* There is _at least_ 1 package in the fifo, read them all */
 	for (;;) {
-		print_format("Dummy read result: 0x%x\n\r",DM9000_ior(DM9000_MRCMDX));	/* Dummy read */
-		//udelay(20);
+		DM9000_ior(DM9000_MRCMDX);	/* Dummy read */
 		/* Get most updated data,
 		 * 		   only look at bits 0:1, See application notes DM9000 */
 		rxbyte = DM9000_inb(DM9000_DATA) & 0x03;
-
 		/* Status check: this byte must be 0 or 1 */
 		if (rxbyte > DM9000_PKT_RDY) {
 			print_format("DM9000 error: status check fail: 0x%x\n\r",
@@ -575,7 +584,7 @@ static int dm9000_rx(struct eth_device *netdev)
 
 		if (rxbyte != DM9000_PKT_RDY){
 			print_format("no packets received\n\r");
-			dm9000_dump_regs();
+	//		dm9000_dump_regs();
 			return 0; /* No packet received, ignore */
 		}
 
@@ -585,8 +594,9 @@ static int dm9000_rx(struct eth_device *netdev)
 		//udelay(20);
 		/* A packet ready now  & Get status/length */
 		(db->rx_status)(&RxStatus, &RxLen);
+		
 
-		DM9000_DBG("rx status: 0x%x rx len: %d\n\r",(uint32_t) RxStatus,(uint32_t) RxLen);
+		DM9000_DBG("rx status: 0x%x rx len: %d\n\r", RxStatus, RxLen);
 
 		/* Move data from DM9000 */
 		/* Read received packet from RX SRAM */
@@ -594,6 +604,9 @@ static int dm9000_rx(struct eth_device *netdev)
 
 		DM9000_DBG("net_rx_packets filled ...\n\r");
 
+		// a good RxStatus would look like: 0x4001
+		// higher byte 0x40 is being anded with 0xBF, which should
+		// produce 0, unless something is wrong ...
 		if ((RxStatus & 0xbf00) || (RxLen < 0x40)
 				|| (RxLen > DM9000_PKT_MAX)) {
 			if (RxStatus & 0x100) {
@@ -617,6 +630,7 @@ static int dm9000_rx(struct eth_device *netdev)
 		} else {
 			//	DM9000_DMP_PACKET(__func__ , rdptr, RxLen);
 			DM9000_DBG("passing packet to upper layer\n\r");
+				//dm9000_dump_eth_frame(rdptr,RxLen);
 			return RxLen;
 		}
 	}
@@ -670,7 +684,8 @@ static void dm9000_get_enetaddr(struct eth_device *dev)
 static uint8_t DM9000_ior(int reg)
 {
 	DM9000_outb(reg, DM9000_IO);
-	return DM9000_inb(DM9000_DATA);
+	return (uint8_t) DM9000_inb(DM9000_DATA);
+
 }
 
 /*
@@ -725,8 +740,10 @@ int dm9000_initialize(void)
 	int i;
 	int regStat;
 	struct eth_device *dev = &(dm9000_info.netdev);
-
 	/*Fill MAC address ...*/	
+//	print_format("SROM_BANK1 data bus: 0x%x\n\r",*(uint32_t*)SROMC_BW);
+//	print_format("Setting bus width of SROM_BANK1 to 16 ...\n\r");
+//	print_format("SROM_BANK1 data bus: 0x%x\n\r",*(uint32_t*)SROMC_BW);
 
 	for(i = 0;i<6;i++)
 		dev->enetaddr[i] = net_ethaddr[i];

@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <ctype.h>
 #include "in.h"
-
+#include "terminal.h"
 
 
 
@@ -13,7 +13,7 @@ uint32_t htonl (uint32_t x)
 #if BYTE_ORDER == BIG_ENDIAN
 	return x;
 #elif BYTE_ORDER == LITTLE_ENDIAN
-	return __bswap_32 (x);
+	return __bswap_32(x);
 #else
 # error "What kind of system is this?"
 #endif
@@ -27,9 +27,9 @@ uint16_t htons (uint16_t x)
 #if BYTE_ORDER == BIG_ENDIAN
 	return x;
 #elif BYTE_ORDER == LITTLE_ENDIAN
-	return __bswap_16 (x);
+	return __bswap_16(x);
 #else
-# error "What kind of system is this?"
+print_format("What kind of system is this?\n\r");
 #endif
 }
 

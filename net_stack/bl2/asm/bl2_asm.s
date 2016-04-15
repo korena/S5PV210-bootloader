@@ -2,13 +2,21 @@
 .code 32
 .global _bl2_entry
 .global doNotOptimize
+.equ sromc_bw,			0xE8000000
 .equ ram_load_address,          0x20000000
-
+.equ sromc_bw_bank_1_setting,   0x000000d0
 _bl2_entry:
 	ldr	r0,=starting_bl2_string 
 	bl	uart_print
 
         bl      clock_subsys_init
+
+@ setting srom bank1 address width and some other properties
+	ldr 	r0,=sromc_bw
+	ldr 	r0,[r0]
+	orr 	r1,r0,#sromc_bw_bank_1_setting
+	ldr 	r0,=sromc_bw
+	str 	r1,[r0]
 
         bl 	mem_ctrl_asm_init
 

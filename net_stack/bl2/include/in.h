@@ -1,7 +1,7 @@
 #ifndef _IN_H_
 #define _IN_H_
 
-
+#include "endian.h"
 
 /*TODO:move me somewhere sensible*/
 #define ARCH_DMA_MINALIGN	64

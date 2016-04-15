@@ -139,6 +139,16 @@
 #define GPR_PHY_PWROFF		(1<<0)
 
 
+#define S5P_SROM_BCX__PMC__SHIFT               0
+#define S5P_SROM_BCX__TACP__SHIFT              4
+#define S5P_SROM_BCX__TCAH__SHIFT              8
+#define S5P_SROM_BCX__TCOH__SHIFT              12
+#define S5P_SROM_BCX__TACC__SHIFT              16
+#define S5P_SROM_BCX__TCOS__SHIFT              24
+#define S5P_SROM_BCX__TACS__SHIFT              28
+
+
+
 /**************** function prototypes ********************/
 int dm9000_initialize(void);
 void dm9000_write_srom_word(int offset, uint16_t val);
@@ -147,8 +157,9 @@ void dm9000_read_srom_word(int offset, uint8_t *to);
 #define CONFIG_DM9000_DEBUG
 
 /**************** TINY210 *************/
-#define CONFIG_DM9000_BASE	0x88000000   // SROMC_BANK1 base
+#define SROMC_BW 		0xE8000000
+#define CONFIG_DM9000_BASE	 0x88000000   // SROMC_BANK1 base
 #define DM9000_IO	CONFIG_DM9000_BASE
-#define DM9000_DATA	(CONFIG_DM9000_BASE+4)
+#define DM9000_DATA	(CONFIG_DM9000_BASE+8)
 
 #endif

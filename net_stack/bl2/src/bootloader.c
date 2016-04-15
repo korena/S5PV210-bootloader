@@ -246,6 +246,10 @@ start_linux(void)
     uint32_t *parm_at = (uint32_t *)( DRAM_BASE + 0x100) ;  // 256 bytes away from the base address of DRAM
     uint32_t machine_type;
 
+    print_format("address 0x8800_0000 contains: 0x%x \n\r",*((uint32_t *)0x88000000));
+
+
+
     debug_print("about to copy linux image to load address: ");
 	uart_print_address(exec_at);
    	ret = load_image((uint32_t)ZIMAGE_START_BLOCK_NUMBER,(uint32_t*)exec_at,(uint16_t)2666);    /* copy image into RAM */
@@ -279,8 +283,10 @@ start_linux(void)
 	debug_print("Setting up timer next ...\n\r");
 	init_timer();	
 	debug_print("About to initialize ethernet networking ...\n\r");	
-
+	
 	net_loop(ARP);
+
+
 while(1){
 	debug_print("delaying for 1 second ...\n\r");
 	udelay(1000000);

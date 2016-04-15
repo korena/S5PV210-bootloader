@@ -6,10 +6,10 @@
 .code 32
 
 .global __raw_writeb
-.global __raw_writew
+.global __raw_writehw
 .global __raw_writel
 .global __raw_readb
-.global __raw_readw
+.global __raw_readhw
 .global __raw_readl
 
 __raw_writeb:
@@ -17,7 +17,7 @@ __raw_writeb:
 	strb	r0,[r1]
 	pop 	{pc}
 
-__raw_writew:
+__raw_writehw:
 	push	{lr}
 	strh	r0,[r1]
 	pop 	{pc}
@@ -32,7 +32,7 @@ __raw_readb:
 	ldrb	r0,[r0]
 	pop 	{pc}
 
-__raw_readw:
+__raw_readhw:
 	push	{lr}
 	ldrh	r0,[r0]
 	pop 	{pc}
