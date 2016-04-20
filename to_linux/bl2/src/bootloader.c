@@ -214,7 +214,7 @@ setup_end_tag(void)
 #define MACH_SMDKV210 2456
 #define DRAM_BASE 0x20000000
 #define ZIMAGE_LOAD_ADDRESS (uint32_t*) (DRAM_BASE + 0x8000)  // 32k away from the base address of DRAM
-#define ZIMAGE_LOAD_END_ADDRESS 1516384 // TODO: no good, find a better way.
+#define ZIMAGE_BLOCK_SIZE ((1516384/512)+1) // TODO: no good, find a better way.
 #define INITRD_LOAD_ADDRESS DRAM_BASE + 0x800000
 #define INITRD_LOAD_END_ADDRESS 4096  // size of the ramdisk 
 static void
@@ -255,7 +255,7 @@ start_linux(void)
 
     debug_print("about to copy linux image to load address: ");
 	uart_print_address(exec_at);
-   	ret = load_image((uint32_t)ZIMAGE_START_BLOCK_NUMBER,(uint32_t*)exec_at,(uint16_t)2666);    /* copy image into RAM */
+   	ret = load_image((uint32_t)ZIMAGE_START_BLOCK_NUMBER,(uint32_t*)exec_at,(uint16_t)ZIMAGE_BLOCK_SIZE);    /* copy image into RAM */
 
     debug_print("done copying linux image ...\n\r\0");
 
