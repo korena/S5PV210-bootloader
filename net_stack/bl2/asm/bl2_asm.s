@@ -1,11 +1,11 @@
 .text
 .code 32
-.global _bl2_entry
+.global start
 .global doNotOptimize
 .equ sromc_bw,			0xE8000000
 .equ ram_load_address,          0x20000000
 .equ sromc_bw_bank_1_setting,   0x000000d0
-_bl2_entry:
+start:
 	ldr	r0,=starting_bl2_string 
 	bl	uart_print
 

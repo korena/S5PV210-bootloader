@@ -6,12 +6,12 @@
  * These functions are defined in asm/io.s
  */
 
-void __raw_writeb(uint8_t d,uint32_t register);
-void __raw_writew(uint16_t d,uint32_t register);
-void __raw_writel(uint32_t d,uint32_t register);
-uint8_t  __raw_readb(uint32_t register);
-uint16_t __raw_readw(uint32_t register);
-uint32_t __raw_readl(uint32_t register);
+extern void _raw_writeb(uint8_t d,uint32_t register);
+extern void _raw_writew(uint16_t d,uint32_t register);
+extern void _raw_writel(uint32_t d,uint32_t register);
+extern uint8_t  _raw_readb(uint32_t register);
+extern uint16_t _raw_readw(uint32_t register);
+extern uint32_t _raw_readl(uint32_t register);
 
 
 #endif

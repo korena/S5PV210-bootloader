@@ -1,12 +1,12 @@
 OUTPUT_FORMAT("elf32-littlearm", "elf32-littlearm", "elf32-littlearm")
 OUTPUT_ARCH(arm)
-ENTRY(_bl2_entry)
+ENTRY(start)
 SECTIONS
 {
  . = 0xD0020FB0;
  . = ALIGN(4);
         .text : {
-        */BL2.bin
+	*/bl2_asm.o
         *(.text)
         }
  . = ALIGN(4);

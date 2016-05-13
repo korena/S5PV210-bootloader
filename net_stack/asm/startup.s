@@ -258,4 +258,5 @@ never_come_here_string:
 .ascii "you should never see this ...\n\r\0"
 calling_copy_function:
 .ascii "calling iROM copy function ...\n\r\0"
+.align 4
 .end

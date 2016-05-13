@@ -6,6 +6,11 @@
 #include "arp.h"
 #include "in.h"
 
+
+
+#define NET_DEBUG
+
+
 static unsigned char net_pkt_buf[(PKTBUFSRX+1) * PKTSIZE_ALIGN + PKTALIGN];
 /* Current receive packet */
 unsigned char 	*net_rx_packet;
@@ -62,20 +67,22 @@ struct in_addr string_to_ip(const char *s)
 
 void ip_to_string(struct in_addr x, char *s)
 {
-	char temp_dest[20];
+	char temp_dest[16];
 	char temp_num[4];
+	print_format("first\n\r");
 	x.s_addr = ntohl(x.s_addr);
-	printnum(temp_num,4,"%d",(int) ((x.s_addr >> 24) & 0xff));
-	strcat(temp_dest,temp_num);
-	strcat(temp_dest,".");	
-	printnum(temp_num,4,"%d",(int) ((x.s_addr >> 16) & 0xff));
-	strcat(temp_dest,temp_num);
-	strcat(temp_dest,".");	
-	printnum(temp_num,4,"%d",(int) ((x.s_addr >> 8) & 0xff));
-	strcat(temp_dest,temp_num);
-	strcat(temp_dest,".");	
-	printnum(temp_num,4,"%d",(int) ((x.s_addr >> 0) & 0xff));
-	strcat(temp_dest,temp_num);
+      	printnum(temp_num,4,"%d",(int) ((x.s_addr >> 24) & 0xff));
+      	strcat(temp_dest,temp_num);
+      	strcat(temp_dest,".");  
+      	printnum(temp_num,4,"%d",(int) ((x.s_addr >> 16) & 0xff));
+      	strcat(temp_dest,temp_num);
+      	strcat(temp_dest,".");  
+      	printnum(temp_num,4,"%d",(int) ((x.s_addr >> 8) & 0xff));
+      	strcat(temp_dest,temp_num);
+      	strcat(temp_dest,".");  
+      	printnum(temp_num,4,"%d",(int) ((x.s_addr >> 0) & 0xff));
+      	strcat(temp_dest,temp_num);
+
 }
 
 
@@ -325,7 +332,29 @@ void net_process_received_packet(unsigned char *in_packet, int len)
 	net_rx_packet = in_packet; 
 	net_rx_packet_len = len; 
 	et = (struct ethernet_hdr *)in_packet;
-
+#ifdef NET_DEBUG
+	//TODO: This is where you should check if the ethernet header is actually populated with 
+	//      proper data, do this by dumping 
+	if(et){
+		print_format("pointer et is not NULL\n\r");
+		print_format("uint8_t et_dest[0] =0x%x \n\r",et->et_dest[0]);
+		print_format("uint8_t et_dest[1] =0x%x \n\r",et->et_dest[1]);
+		print_format("uint8_t et_dest[2] =0x%x \n\r",et->et_dest[2]);
+		print_format("uint8_t et_dest[3] =0x%x \n\r",et->et_dest[3]);
+		print_format("uint8_t et_dest[4] =0x%x \n\r",et->et_dest[4]);
+		print_format("uint8_t et_dest[5] =0x%x \n\r",et->et_dest[5]);
+		print_format("uint8_t et_src[0] = 0x%x \n\r",et->et_src[0]);
+		print_format("uint8_t et_src[1] = 0x%x \n\r",et->et_src[1]);
+		print_format("uint8_t et_src[2] = 0x%x \n\r",et->et_src[2]);
+		print_format("uint8_t et_src[3] = 0x%x \n\r",et->et_src[3]);
+		print_format("uint8_t et_src[4] = 0x%x \n\r",et->et_src[4]);
+		print_format("uint8_t et_src[5] = 0x%x \n\r",et->et_src[5]);
+		print_format("uint16_t et_protlen = 0x%x\n\r",et->et_protlen);
+	}else{
+		print_format("the pointer et is MULL\n\r");
+		while(1); // something is wrong, and you need to fix the bug.
+	}
+#endif
 	/* too small packet? */
 	if (len < ETHER_HDR_SIZE)
 		return;
@@ -341,24 +370,6 @@ void net_process_received_packet(unsigned char *in_packet, int len)
 
 	eth_proto = ntohs(et->et_protlen);
 
-
-	// remove this block ...
-	print_format("destination and source IPs\n\r");
-	int fx = 0;	
-	char dest[7],src[7];
-	for(fx=0;fx<6;fx++){
-		dest[fx] = ntohs(et->et_dest[fx]);
-		dest[fx] = '\0';
-	}	
-	print_format(dest);
-	for(fx=0;fx<6;fx++){
-		src[fx] = ntohs(et->et_src[fx]);
-		src[fx] = '\0';
-	}	
-	print_format(src);
-	// end remove block ...
-
-
 	if (eth_proto < 1514) {
 		struct e802_hdr *et802 = (struct e802_hdr *)et;
 		/*
@@ -369,9 +380,31 @@ void net_process_received_packet(unsigned char *in_packet, int len)
 		ip = (struct ip_udp_hdr *)(in_packet + E802_HDR_SIZE);
 		len -= E802_HDR_SIZE;
 
-	} else if (eth_proto != PROT_VLAN) {	/* normal packet */
-		ip = (struct ip_udp_hdr *)(in_packet + ETHER_HDR_SIZE);
+	} else if (eth_proto != PROT_VLAN) {
+		/* normal packet */
+		ip = (struct ip_udp_hdr *)(in_packet + ETHER_HDR_SIZE); // padding into the rx_packet by ethernet hdr size ...
 		len -= ETHER_HDR_SIZE;
+#ifdef NET_DEBUG
+		print_format("header length and version: 0x%x\n\r",ip->ip_hl_v);
+		print_format("type of service: 0x%x\n\r",ip->ip_tos);
+		print_format("total length: 0x%x\n\r",ip->ip_len);
+		print_format("identification: 0x%x\n\r",ip->ip_id);
+		print_format("fragment offset field: 0x%x\n\r",ip->ip_off);
+		print_format("time to live: 0x%x\n\r",ip->ip_ttl);
+		print_format("protocol: 0x%x\n\r",ip->ip_p);
+		print_format("checksum: 0x%x\n\r",ip->ip_sum);
+
+		print_format("UDP source port: 0x%x\n\r",ip->udp_src);
+		print_format("UDP dest port: 0x%x\n\r",ip->udp_dst);
+		print_format("length of UDP packet: 0x%x\n\r",ip->udp_len);
+		print_format("UDP checksum: 0x%x\n\r",ip->udp_xsum);
+		
+		// dump the whole IP thing !
+//		for(int zip=0;zip<len;zip++){
+//			print_format("B_%d = 0x%x\n\r",zip,*((uint8_t*)ip+zip));
+//		}
+
+#endif
 	} else {			/* VLAN packet */
 		struct vlan_ethernet_hdr *vet =
 			(struct vlan_ethernet_hdr *)et;

@@ -121,13 +121,13 @@ static board_info_t dm9000_info;
 //#define DM9000_inw(r) readw((volatile uint16_t *)(r))
 //#define DM9000_inl(r) readl((volatile uint32_t *)(r))
 //#else
-#define DM9000_outb(d, r) __raw_writeb(d, r)
-#define DM9000_outw(d, r) __raw_writehw(d, r)
-#define DM9000_outl(d, r) __raw_writel(d, r)
-#define DM9000_inb(r) __raw_readb(r)
-//#define __raw_readw(a)		(*(volatile uint16_t *)(a))
-#define DM9000_inw(r) __raw_readhw(r)
-#define DM9000_inl(r) __raw_readl(r)
+#define DM9000_outb(d, r) _raw_writeb(d, r)
+#define DM9000_outw(d, r) _raw_writehw(d, r)
+#define DM9000_outl(d, r) _raw_writel(d, r)
+#define DM9000_inb(r) _raw_readb(r)
+//#define _raw_readw(a)		(*(volatile uint16_t *)(a))
+#define DM9000_inw(r) _raw_readhw(r)
+#define DM9000_inl(r) _raw_readl(r)
 //#endif
 
 #ifdef CONFIG_DM9000_DEBUG
@@ -151,38 +151,10 @@ dm9000_dump_regs(void)
 
 void dm9000_dump_eth_frame(uint8_t *packet,int len){
 	print_format("ethernet header print ------\n\r");
-	print_format("1 byte is: 0x%x\n\r",packet[0]);
-	print_format("2 byte is: 0x%x\n\r",packet[1]);
-	print_format("3 byte is: 0x%x\n\r",packet[2]);
-	print_format("4 byte is: 0x%x\n\r",packet[3]);
-	print_format("5 byte is: 0x%x\n\r",packet[4]);
-	print_format("6 byte is: 0x%x\n\r",packet[5]);
-	print_format("7 byte is: 0x%x\n\r",packet[6]);
-	print_format("8 byte is: 0x%x\n\r",packet[7]);
-	print_format("9 byte is: 0x%x\n\r",packet[8]);
-	print_format("10 byte is: 0x%x\n\r",packet[9]);
-	print_format("11 byte is: 0x%x\n\r",packet[10]);
-	print_format("12 byte is: 0x%x\n\r",packet[11]);
-	print_format("13 byte is: 0x%x\n\r",packet[12]);
-	print_format("14 byte is: 0x%x\n\r",packet[13]);
-	print_format("15 byte is: 0x%x\n\r",packet[14]);
-	print_format("16 byte is: 0x%x\n\r",packet[15]);
-	print_format("17 byte is: 0x%x\n\r",packet[16]);
-	print_format("18 byte is: 0x%x\n\r",packet[17]);
-	print_format("19 byte is: 0x%x\n\r",packet[18]);
-	print_format("20 byte is: 0x%x\n\r",packet[19]);
-	print_format("21 byte is: 0x%x\n\r",packet[20]);
-//	int fx = 0;
-//	print_format("The destination address is:\t");
-//	for(fx=8;fx<15;fx++){
-//	print_format(" 0x%x", packet[fx]);  // should convert (ntoh)
-//	}
-//	print_format("\n\rThe source address is:\t");
-//	for(fx=16;fx<22;fx++){
-//	print_format(" 0x%x", packet[fx]);
-//	}
-//	// protocol type
-//	print_format("\n\rEthernet type word is:0x%x 0x%x\n\r",packet[17],packet[16]);	
+
+	for(int a=0;a<len;a++)
+		print_format("%d byte is: 0x%x\n\r",a,packet[a]);
+
 	print_format("ethernet header print end ------\n\r");
 }
 
@@ -315,7 +287,7 @@ static void dm9000_reset(void)
 {
 	DM9000_DBG("resetting DM9000\n\r");
 //	(*(uint32_t*)SROMC_BW) |= ((1 << 0) | (1 << 2) | (1 << 3)) << 4; // switching to 16 bit bus on SROM bank 1 
-       __raw_writel((0x1 << S5P_SROM_BCX__PMC__SHIFT) |
+       _raw_writel((0x1 << S5P_SROM_BCX__PMC__SHIFT) |
    		    (0x9 << S5P_SROM_BCX__TACP__SHIFT) |
                     (0xc << S5P_SROM_BCX__TCAH__SHIFT) |
                     (0x1 << S5P_SROM_BCX__TCOH__SHIFT) |
@@ -629,8 +601,8 @@ static int dm9000_rx(struct eth_device *netdev)
 			}
 		} else {
 			//	DM9000_DMP_PACKET(__func__ , rdptr, RxLen);
-			DM9000_DBG("passing packet to upper layer\n\r");
-				//dm9000_dump_eth_frame(rdptr,RxLen);
+	//		DM9000_DBG("passing packet to upper layer\n\r");
+			dm9000_dump_eth_frame(rdptr,RxLen);
 			return RxLen;
 		}
 	}

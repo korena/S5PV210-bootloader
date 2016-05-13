@@ -4,6 +4,9 @@
 #include "terminal.h"
 #include "timer.h"
 
+#define ARP_DEBUG
+
+
 #ifndef	CONFIG_ARP_TIMEOUT
 /* Milliseconds before trying ARP again */
 # define ARP_TIMEOUT		5000UL
@@ -109,12 +112,39 @@ void arp_receive(struct ethernet_hdr *et, struct ip_udp_hdr *ip, int len)
 	 *   the server ethernet address
 	 */
 	print_format("Got ARP\n\r");
-
 	arp = (struct arp_hdr *)ip;
 	if (len < ARP_HDR_SIZE) {
 		print_format("bad length %d < %d\n\r", len, ARP_HDR_SIZE);
 		return;
 	}
+#ifdef ARP_DEBUG
+	print_format("[DEBUG] ARP dump\n\r");
+	print_format("ar_hdr : 0x%x\n\r",ntohs(arp->ar_hrd));
+	print_format("ar_pro : 0x%x\n\r",ntohs(arp->ar_pro));
+	print_format("ar_hln : 0x%x\n\r",(uint8_t)arp->ar_hln);
+	print_format("ar_pln : 0x%x\n\r",(uint8_t)arp->ar_pln);
+	print_format("ar_op  : 0x%x\n\r",ntohs(arp->ar_op));
+	print_format("ar_sha : 0x%x\n\r",(uint8_t)arp->ar_sha); 
+	print_format("ar_sha1 : 0x%x\n\r",(uint8_t) *(&(arp->ar_sha)+1)); 
+	print_format("ar_sha2 : 0x%x\n\r",(uint8_t) *(&(arp->ar_sha)+2)); 
+	print_format("ar_sha3 : 0x%x\n\r",(uint8_t) *(&(arp->ar_sha)+3)); 
+	print_format("ar_sha4 : 0x%x\n\r",(uint8_t) *(&(arp->ar_sha)+4)); 
+	print_format("ar_sha5 : 0x%x\n\r",(uint8_t) *(&(arp->ar_sha)+5)); 
+	print_format("ar_spa : 0x%x\n\r",net_read_ip(&arp->ar_spa).s_addr);
+	print_format("ar_tha : 0x%x\n\r",(uint8_t)arp->ar_tha);
+	print_format("ar_tha1 : 0x%x\n\r",(uint8_t) *(&(arp->ar_tha)+1));
+	print_format("ar_tha2 : 0x%x\n\r",(uint8_t) *(&(arp->ar_tha)+2));
+	print_format("ar_tha3 : 0x%x\n\r",(uint8_t) *(&(arp->ar_tha)+3));
+	print_format("ar_tha4 : 0x%x\n\r",(uint8_t) *(&(arp->ar_tha)+4));
+	print_format("ar_tha5 : 0x%x\n\r",(uint8_t) *(&(arp->ar_tha)+5));
+	//print_format("ar_tpa : 0x%x\n\r",net_read_ip(&arp->ar_tpa).s_addr);  // this does not work. looks like an alignment issue, dont care.
+	//print_format("at_tpa : 0x%x\n\r",(uint8_t) *(&(arp->ar_tpa)));
+	print_format("at_tpa full attempt : 0x%x\n\r",net_read_ip((uint32_t)&arp->ar_tpa).s_addr);
+	print_format("at_tpa1 : 0x%x\n\r",(uint8_t) *(&(arp->ar_tpa)+1));
+	print_format("at_tpa2 : 0x%x\n\r",(uint8_t) *(&(arp->ar_tpa)+2));
+	print_format("at_tpa3 : 0x%x\n\r",(uint8_t) *(&(arp->ar_tpa)+3));
+	print_format("[DEBUG] ARP dump end\n\r");
+#endif	
 	if (ntohs(arp->ar_hrd) != ARP_ETHER)
 		return;
 	if (ntohs(arp->ar_pro) != PROT_IP)

@@ -159,7 +159,7 @@ struct arp_hdr {
 #define ARP_HLEN	6
 	uint8_t		ar_pln;		/* Length of protocol address	*/
 #define ARP_PLEN	4
-	uint16_t		ar_op;		/* Operation			*/
+	uint16_t	ar_op;		/* Operation			*/
 #define ARPOP_REQUEST   1		/* Request  to resolve  address	*/
 #define ARPOP_REPLY	2		/* Response to previous request	*/
 
@@ -256,10 +256,10 @@ void net_process_received_packet(unsigned char *in_packet, int len);
 static inline struct in_addr net_read_ip(void *from)
 {
 	struct in_addr ip;
-
 	memcpy((void *)&ip, (void *)from, sizeof(ip));
 	return ip;
 }
+
 
 /* return ulong *in network byteorder* */
 static inline uint32_t net_read_u32(uint32_t *from)

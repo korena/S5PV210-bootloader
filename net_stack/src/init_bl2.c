@@ -15,17 +15,19 @@ void debug_print(char*str){
 
 void copy_bl2_to_sram(void){
 	uint32_t *load_address =(uint32_t*) (0xD0020FB0);  // SRAM BL1 start address + 16k (binary kilo)
-	debug_print("Copying BL2 started ...\n\r\0");
+	debug_print("Copying BL2 started ...\n\r");
 	void (*BL2)(void);
 	uint32_t channel = 0;
 	copy_mmc_to_mem copy_func = (copy_mmc_to_mem) (*(uint32_t *) 0xD0037F98); //SdMccCopyToMem function from iROM documentation
 	uint32_t ret = copy_func(channel, 33, COPY_BL2_SIZE/512,load_address, 0);
 	if(ret == 1){
-		debug_print("BL2 loading successful, running it ...\n\r\0");
+		debug_print("BL2 loading successful, running it ...\n\r");
+		debug_print("The address where BL2 should be contains:\n\r");
+		uart_print_hex(*load_address);
 		BL2 = (void*) load_address;
 		(*BL2)(); // dereferencing and running ...
 	}else{
-		debug_print("BL2 loading failed :-(\n\r\0");
+		debug_print("BL2 loading failed :-(\n\r");
 	}
 }
 

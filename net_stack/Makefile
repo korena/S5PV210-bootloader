@@ -1,10 +1,10 @@
 # for home
-CROSS_COMPILE	= /home/korena/Compilers/gcc-arm-none-eabi-5_2-2015q4/bin/arm-none-eabi-
+#CROSS_COMPILE	= /home/korena/Compilers/gcc-arm-none-eabi-5_2-2015q4/bin/arm-none-eabi-
 LIBS_DIR = -L /home/korena/Compilers/gcc-arm-none-eabi-5_2-2015q4/lib/gcc/arm-none-eabi/5.2.1/
 LIBS_DIR += -L /home/korena/Compilers/gcc-arm-none-eabi-5_2-2015q4/lib/
 LIBS_DIR += -L /home/korena/Compilers/gcc-arm-none-eabi-5_2-2015q4/arm-none-eabi/lib/
 # for work
-#CROSS_COMPILE	=arm-none-eabi-
+CROSS_COMPILE	=arm-none-eabi-
 
 
 AS        = $(CROSS_COMPILE)as
@@ -69,12 +69,13 @@ BL1_C_INCLUDES += $(wildcard $(BL1_INCLUDES_DIR)/*.h)
 
 BL2_BIN = $(TARGET_BIN_DIR)/BL2.bin
 BL2_ELF = $(TARGET_BIN_DIR)/BL2.elf
-BL2_LDS   = $(BL2_ROOT_DIR)/BL2_linker.lds
+BL2_LDS = $(BL2_ROOT_DIR)/BL2_linker.lds
 
 #BL2 source files expressions ...
 BL2_SRCs_ASM += $(wildcard $(BL2_ASM_SRC_DIR)/*.s)
 BL2_SRCs_C += $(wildcard $(BL2_C_SRC_DIR)/*.c)
-OBJS_BL2 = $(BL2_SRCs_ASM:.s=.o) $(BL2_SRCs_C:.c=.o)
+BL2_OBJS_ASM = $(BL2_SRCs_ASM:.s=.o) 
+BL2_OBJS_C = $(BL2_SRCs_C:.c=.o)
 
 CFLAGS = -Os  -Wall -march=armv7-a
 LDFLAGS = -nostdlib  
@@ -91,8 +92,8 @@ $(BL1_BIN):      $(OBJS_BL1)
 $(BL1_BIN).boot:	$(BL1_BIN) $(IMGMAKE)
 	$(IMGMAKE) ./$(BL1_BIN) ./$(BL1_BIN).boot
 
-$(BL2_BIN):   $(OBJS_BL2)
-	$(LD)  -T $(BL2_LDS) -o $(BL2_ELF) -Map $(BL2_ROOT_DIR)/BL2.map $(OBJS_BL2) $(LDFLAGS) $(LIBS_DIR) $(LIBS)
+$(BL2_BIN):   $(BL2_OBJS_ASM) $(BL2_OBJS_C)
+	$(LD) -T $(BL2_LDS) -o $(BL2_ELF) -Map $(BL2_ROOT_DIR)/BL2.map $(BL2_OBJS_ASM) $(BL2_OBJS_C) $(LDFLAGS) $(LIBS_DIR) $(LIBS)
 	$(OBJCOPY) -O binary $(BL2_ELF) $(BL2_BIN)
 
 $(BL2_BIN).img:	$(BL2_BIN) $(IMGMAKEBL2)
@@ -113,25 +114,25 @@ $(BL1_C_SRC_DIR)/%.o:	$(BL1_C_SRC_DIR)/%.c
 $(BL1_ASM_SRC_DIR)/%.o:	$(BL1_ASM_SRC_DIR)/%.s
 	$(AS) -c $(AFLAGS) -I $(BL1_INCLUDES_DIR)  $< -o $@
 
-$(BL2_C_SRC_DIR)/%.o:	$(BL2_C_SRC_DIR)/%.c
-	$(CC) -c $(CFLAGS) -I $(BL2_INCLUDES_DIR)  $< -o $@ 
-
 $(BL2_ASM_SRC_DIR)/%.o:	$(BL2_ASM_SRC_DIR)/%.s
 	$(AS) -c $(AFLAGS) -I $(BL2_INCLUDES_DIR)  $< -o $@
+
+$(BL2_C_SRC_DIR)/%.o:	$(BL2_C_SRC_DIR)/%.c 
+	$(CC) -c $(CFLAGS) -I $(BL2_INCLUDES_DIR)  $< -o $@ 
 
 $(BL1_ELF): $(OBJS_BL1)
 	$(CC) $(OBJS_BL1) $(CFLAGS) -o $@
 
 
-$(BL2_ELF): $(OBJS_BL2)
-	$(CC) $(OBJS_BL2) $(CFLAGS) -o $@
+$(BL2_ELF): $(BL2_OBJS_ASM) $(BL2_OBJS_C)
+	$(CC) $(BL2_OBJS_ASM) $(BL2_OBJS_C) $(CFLAGS) -o $@
 
 
 readFileBytes:
 	gcc $(CFLAGS_HOST) -o $(HOST_BIN_DIR)/readBytes $(HOST_TOOLS_DIR)/readFileBytes.c
 
-dep:
-	gccmakedep $(OBJS_BL1:.o=.c) $(OBJS_BL1:.o=.s) $(OBJS_BL2:.o=.c) $(OBJS_BL2:.o=.s)
+#dep:
+#	gccmakedep $(OBJS_BL1:.o=.c) $(OBJS_BL1:.o=.s) $(OBJS_BL2:.o=.c) $(OBJS_BL2:.o=.s)
 
 clean:
 	rm -rf $(OBJS) $(HOST_BIN_DIR)/*  $(TARGET_BIN_DIR)/*.bin $(TARGET_BIN_DIR)/*.elf $(TARGET_BIN_DIR)/*.boot $(TARGET_BIN_DIR)/*.o *.map *.o $(BL1_ASM_SRC_DIR)/*.o $(BL1_C_SRC_DIR)/*.o $(BL2_ASM_SRC_DIR)/*.o $(BL2_C_SRC_DIR)/*.o $(BL2_ROOT_DIR)/*.map $(TARGET_BIN_DIR)/*.img
