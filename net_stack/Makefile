@@ -77,7 +77,7 @@ BL2_SRCs_C += $(wildcard $(BL2_C_SRC_DIR)/*.c)
 BL2_OBJS_ASM = $(BL2_SRCs_ASM:.s=.o) 
 BL2_OBJS_C = $(BL2_SRCs_C:.c=.o)
 
-CFLAGS = -Os  -Wall -march=armv7-a
+CFLAGS = -O2  -Wall -march=armv7-a
 LDFLAGS = -nostdlib  
 LIBS = -lgcc -lc 
 AFLAGS = -march=armv7-a

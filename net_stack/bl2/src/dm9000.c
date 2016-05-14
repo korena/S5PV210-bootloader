@@ -602,7 +602,7 @@ static int dm9000_rx(struct eth_device *netdev)
 		} else {
 			//	DM9000_DMP_PACKET(__func__ , rdptr, RxLen);
 	//		DM9000_DBG("passing packet to upper layer\n\r");
-			dm9000_dump_eth_frame(rdptr,RxLen);
+//			dm9000_dump_eth_frame(rdptr,RxLen);
 			return RxLen;
 		}
 	}

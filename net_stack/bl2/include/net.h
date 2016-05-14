@@ -208,7 +208,7 @@ struct ip_udp_hdr {
 };
 
 
-#define PKTBUFSRX	16 // This is the length of the packet buffer,
+#define PKTBUFSRX	4 // This is the length of the packet buffer,
 #define PKTSIZE_ALIGN	1536
 #define PKTALIGN	ARCH_DMA_MINALIGN
 //this value is just an assumption, we'll see if it fails
@@ -252,11 +252,38 @@ void net_process_received_packet(unsigned char *in_packet, int len);
 /**
  * Some functions claiming alignment issues on ARM, 
  * I will trust those, no time to investigate.
+ * EDIT: so the compiler assumes the passed address is aligned,
+ * I'm not sure what u-boot uses to force correct behavior 
+ * at this point, this could be a problem with my specific compiler,
+ * but I don't care, will just work around it.
+
+
+ The bellow for loop does the following, but accesses the contents of the unaligned
+ address at a byte boundary :
+	aligned_ul = ((uint32_t)*from << 24)|((uint32_t) *(from+1) << 16)|
+			((uint32_t) *(from+2) << 8) | (uint32_t)*(from+3);	
+
  * */
 static inline struct in_addr net_read_ip(void *from)
 {
 	struct in_addr ip;
-	memcpy((void *)&ip, (void *)from, sizeof(ip));
+	if(((uint32_t)from & 0x3)){
+		print_format("[NOT COOL] alignment issue detected\n\r");
+			// droping to byte alignment and living with it
+		 uint8_t* _from = (uint8_t *)from;	
+			uint32_t aligned_ul = 0;	
+			for(int al_i=0;al_i<4;al_i++){
+				print_format("appending value 0x%x\n\r",_from[al_i]);
+				aligned_ul |= (((uint32_t)*(_from+al_i)) << (al_i == 0?24:(24-8*al_i)));
+				print_format(" (uint32_t) _from[%d] << %d = 0x%x\n\r",
+				al_i,
+				(al_i == 0?24:(24-8*al_i)),(((uint32_t)*(_from+al_i)) << (al_i == 0?24:(24-8*al_i))));
+			}
+		print_format("The aligned_ul value is 0x%x\n\r",aligned_ul);
+		ip.s_addr = aligned_ul; 
+	}else{
+		memcpy((void *)&ip, (void *)from, sizeof(ip));
+	}
 	return ip;
 }
 

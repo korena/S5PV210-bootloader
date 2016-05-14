@@ -8,7 +8,7 @@
 
 
 
-#define NET_DEBUG
+//#define NET_DEBUG
 
 
 static unsigned char net_pkt_buf[(PKTBUFSRX+1) * PKTSIZE_ALIGN + PKTALIGN];
