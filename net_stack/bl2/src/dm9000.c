@@ -173,7 +173,7 @@ static void dm9000_outblk_16bit(volatile void *data_ptr, int count)
 	uint32_t tmplen = (count + 1) / 2;
 
 	for (i = 0; i < tmplen; i++)
-		DM9000_outw(((uint16_t *) data_ptr)[i], DM9000_DATA-2);
+		DM9000_outw(((uint16_t *) data_ptr)[i], DM9000_DATA);
 }
 static void dm9000_outblk_32bit(volatile void *data_ptr, int count)
 {
@@ -285,7 +285,7 @@ static void dm9000_start(void){
 /* General Purpose dm9000 reset routine */
 static void dm9000_reset(void)
 {
-	DM9000_DBG("resetting DM9000\n\r");
+	print_format("resetting DM9000\n\r");
 //	(*(uint32_t*)SROMC_BW) |= ((1 << 0) | (1 << 2) | (1 << 3)) << 4; // switching to 16 bit bus on SROM bank 1 
        _raw_writel((0x1 << S5P_SROM_BCX__PMC__SHIFT) |
    		    (0x9 << S5P_SROM_BCX__TACP__SHIFT) |
@@ -307,7 +307,9 @@ static void dm9000_reset(void)
 	DM9000_iow(DM9000_NCR, (NCR_LBK_INT_MAC | NCR_RST));
 
 	do {
+#ifdef CONFIG_DM9000_DEBUG
 		DM9000_DBG("resetting the DM9000, 1st reset\n\r");
+#endif
 		udelay(25); /* Wait at least 20 us */
 	} while (DM9000_ior(DM9000_NCR) & 1);
 
@@ -315,7 +317,9 @@ static void dm9000_reset(void)
 	DM9000_iow(DM9000_NCR, (NCR_LBK_INT_MAC | NCR_RST)); /* Issue a second reset */
 
 	do {
+#ifdef CONFIG_DM9000_DEBUG
 		DM9000_DBG("resetting the DM9000, 2nd reset\n\r");
+#endif
 		udelay(25); /* Wait at least 20 us */
 	} while (DM9000_ior(DM9000_NCR) & 1);
 
@@ -323,7 +327,9 @@ static void dm9000_reset(void)
 	if ((DM9000_ior(DM9000_PIDL) != 0x0) ||
 			(DM9000_ior(DM9000_PIDH) != 0x90)){
 		print_format("ERROR: resetting DM9000 -> not responding \n\r(PIDH = 0x%x,PIDL = 0x%x)\n\r");
+#ifdef CONFIG_DM9000_DEBUG
 		dm9000_dump_regs();
+#endif
 	}
 }
 
@@ -352,7 +358,10 @@ static int dm9000_init(struct eth_device *dev)
 	/* Auto-detect 8/16/32 bit mode, ISR Bit 6+7 indicate bus width */
 
 	io_mode = DM9000_ior(DM9000_ISR) >> 6;
+
+#ifdef CONFIG_DM9000_DEBUG
 	dm9000_dump_regs();
+#endif
 	switch (io_mode) {
 		case 0x0:  /* 16-bit mode */
 			print_format("DM9000: running in 16 bit mode\n\r");
@@ -416,7 +425,9 @@ static int dm9000_init(struct eth_device *dev)
 	/* read back multicast address, just to be sure*/
 	print_format("reading multicast from hardware ...\n\r");
 	for(i = 0,oft=0x16; i<8;i++,oft++){
+#ifdef CONFIG_DM9000_DEBUG
 		DM9000_DBG("%x\n\r:", DM9000_ior(oft));
+#endif
 	}
 
 	/* Activate DM9000 */
@@ -477,6 +488,9 @@ static int dm9000_send(struct eth_device *netdev, volatile void *packet,
 
 	/* Move data to DM9000 TX RAM */
 	DM9000_outb(DM9000_MWCMD, DM9000_IO); /* Prepare for TX-data */
+#ifdef CONFIG_DM9000_DEBUG
+	dm9000_dump_eth_frame(packet,length);
+#endif
 
 	/* push the data to the TX-fifo */
 	(db->outblk)(packet, length);
@@ -492,14 +506,16 @@ static int dm9000_send(struct eth_device *netdev, volatile void *packet,
 	tmo = get_timer(0) + 5 * CONFIG_SYS_HZ;
 	while ( !(DM9000_ior(DM9000_NSR) & (NSR_TX1END | NSR_TX2END)) ||
 			!(DM9000_ior(DM9000_ISR) & IMR_PTM) ) {
+		// transmission will never timeout (get_timer stubbed) ...
 		if (get_timer(0) >= tmo) {
 			print_format("transmission timeout\n\r");
 			break;
 		}
 	}
 	DM9000_iow(DM9000_ISR, IMR_PTM); /* Clear Tx bit in ISR */
-
+#ifdef CONFIG_DM9000_DEBUG
 	DM9000_DBG("transmit done\n\r\n\r");
+#endif
 	return 0;
 }
 
@@ -556,26 +572,29 @@ static int dm9000_rx(struct eth_device *netdev)
 
 		if (rxbyte != DM9000_PKT_RDY){
 			print_format("no packets received\n\r");
-	//		dm9000_dump_regs();
+#ifdef CONFIG_DM9000_DEBUG
+			dm9000_dump_regs();
+#endif
 			return 0; /* No packet received, ignore */
 		}
 
 
-
+#ifdef CONFIG_DM9000_DEBUG
 		DM9000_DBG("receiving packet\n\r");
+#endif
 		//udelay(20);
 		/* A packet ready now  & Get status/length */
 		(db->rx_status)(&RxStatus, &RxLen);
 		
-
+#ifdef CONFIG_DM9000_DEBUG
 		DM9000_DBG("rx status: 0x%x rx len: %d\n\r", RxStatus, RxLen);
-
+#endif
 		/* Move data from DM9000 */
 		/* Read received packet from RX SRAM */
 		(db->inblk)(rdptr, RxLen);
-
+#ifdef CONFIG_DM9000_DEBUG
 		DM9000_DBG("net_rx_packets filled ...\n\r");
-
+#endif
 		// a good RxStatus would look like: 0x4001
 		// higher byte 0x40 is being anded with 0xBF, which should
 		// produce 0, unless something is wrong ...
@@ -583,9 +602,10 @@ static int dm9000_rx(struct eth_device *netdev)
 				|| (RxLen > DM9000_PKT_MAX)) {
 			if (RxStatus & 0x100) {
 				print_format("rx fifo error\n\r");
-				/*debugging ... I want to actually see what's received !!!*/
+#ifdef CONFIG_DM9000_DEBUG
 				dm9000_dump_regs();
 				dm9000_dump_eth_frame(rdptr,RxLen);
+#endif
 			}
 			if (RxStatus & 0x200) {
 				print_format("rx crc error\n\r");
@@ -597,7 +617,9 @@ static int dm9000_rx(struct eth_device *netdev)
 				print_format("rx length too big\n\r");
 				dm9000_reset();
 				dm9000_start();
-				//	dm9000_dump_regs();
+#ifdef CONFIG_DM9000_DEBUG
+				dm9000_dump_regs();
+#endif
 			}
 		} else {
 			//	DM9000_DMP_PACKET(__func__ , rdptr, RxLen);

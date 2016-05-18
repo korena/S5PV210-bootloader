@@ -5,6 +5,7 @@
 #include "net.h"
 #include "arp.h"
 #include "in.h"
+#include "io.h"
 
 
 
@@ -425,8 +426,9 @@ void net_process_received_packet(unsigned char *in_packet, int len)
 		len -= VLAN_ETHER_HDR_SIZE;
 
 	}	
-
+#ifdef NET_DEBUG
 	print_format("Receive from protocol 0x%x\n\r", eth_proto);
+#endif
 
 	if ((myvlanid & VLAN_IDMASK) != VLAN_NONE) {
 		if (vlanid == VLAN_NONE)
@@ -461,8 +463,8 @@ int net_set_ether(unsigned char *xet, const unsigned char *dest_ethaddr, uint32_
 	if (myvlanid == (unsigned short)-1)
 		myvlanid = VLAN_NONE;
 
-	memcpy(et->et_dest, dest_ethaddr, 6);
-	memcpy(et->et_src, net_ethaddr, 6);
+	ul_memcpy(et->et_dest, dest_ethaddr, 6);
+	ul_memcpy(et->et_src, net_ethaddr, 6);
 	if ((myvlanid & VLAN_IDMASK) == VLAN_NONE) {
 		et->et_protlen = htons(prot);
 		return ETHER_HDR_SIZE;
@@ -481,8 +483,8 @@ int net_update_ether(struct ethernet_hdr *et, unsigned char *addr, unsigned int 
 {
 	unsigned short protlen;
 
-	memcpy(et->et_dest, addr, 6);
-	memcpy(et->et_src, net_ethaddr, 6);
+	ul_memcpy(et->et_dest, addr, 6);
+	ul_memcpy(et->et_src, net_ethaddr, 6);
 	protlen = ntohs(et->et_protlen);
 	if (protlen == PROT_VLAN) {
 		struct vlan_ethernet_hdr *vet =

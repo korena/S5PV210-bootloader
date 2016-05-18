@@ -272,26 +272,27 @@ start_linux(void)
     
 //	debug_print("jumping to the kernel ... brace yourself!\n\r\0");
  
-//        asm("mrc p15, 0, r1, c1, c0, 0"); /* Read Control Register configuration data*/
+//      asm("mrc p15, 0, r1, c1, c0, 0"); /* Read Control Register configuration data*/
 //	asm("bic r1, r1, #(0x1 << 12)");  /* Disable I Cache*/
 //	asm("bic r1, r1, #(0x1 << 2)");   /* Disable D Cache*/
 //	asm("mcr p15, 0, r1, c1, c0, 0"); /* Write Control Register configuration data*/
 
 //     theKernel(0, machine_type, parm_at);    /* jump to kernel with register set */
 	
+	
 
-	debug_print("Setting up timer next ...\n\r");
-	init_timer();	
-	debug_print("About to initialize ethernet networking ...\n\r");	
+	print_format("Setting up timers next ...\n\r");
+	init_system_timer();	
+	init_timer();
 	
 	net_loop(ARP);
 
+	uint32_t start_time = get_timer(0);
 
-while(1){
-	debug_print("delaying for 1 second ...\n\r");
-	udelay(1000000);
-	debug_print("done!\n\r");
-}
+	while(1){
+		print_format("time difference in ms is %d\n\r",get_timer(start_time));
+		udelay(1000000);
+	}
 
     return 0;
 }

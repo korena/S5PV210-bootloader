@@ -72,12 +72,15 @@ BL2_ELF = $(TARGET_BIN_DIR)/BL2.elf
 BL2_LDS = $(BL2_ROOT_DIR)/BL2_linker.lds
 
 #BL2 source files expressions ...
-BL2_SRCs_ASM += $(wildcard $(BL2_ASM_SRC_DIR)/*.s)
-BL2_SRCs_C += $(wildcard $(BL2_C_SRC_DIR)/*.c)
-BL2_OBJS_ASM = $(BL2_SRCs_ASM:.s=.o) 
-BL2_OBJS_C = $(BL2_SRCs_C:.c=.o)
-
-CFLAGS = -O2  -Wall -march=armv7-a
+BL2_SRCs_ASM  = $(wildcard $(BL2_ASM_SRC_DIR)/*.s)
+BL2_SRCs_ASM += $(wildcard $(BL2_ASM_SRC_DIR)/*.S)
+BL2_SRCs_C   += $(wildcard $(BL2_C_SRC_DIR)/*.c)
+BL2_OBJS_ASM  = $(BL2_SRCs_ASM:.s=.o) 
+BL2_OBJS_ASM += $(BL2_SRCs_ASM:.S=.o) 
+BL2_OBJS_C    = $(BL2_SRCs_C:.c=.o)
+//BL2_OBJS      = $(BL2_SRCs_ASM:.s=.o) $(BL2_SRCs_ASM:.S=.o) $(BL2_SRCs_C:.c=.o) 
+BL2_OBJS      = $(patsubst %.s,%.o,$(wildcard $(BL2_ASM_SRC_DIR)/*.s)) $(patsubst %.S,%.o,$(wildcard $(BL2_ASM_SRC_DIR)/*.S)) $(patsubst %.c,%.o,$(wildcard $(BL2_C_SRC_DIR)/*.c)) 
+CFLAGS = -Os  -Wall -march=armv7-a
 LDFLAGS = -nostdlib  
 LIBS = -lgcc -lc 
 AFLAGS = -march=armv7-a
@@ -85,18 +88,20 @@ CFLAGS_HOST = -Os -Wall
 
 all:  $(IMGMAKE) $(IMGMAKEBL2)  $(BL1_BIN).boot  $(BL1_BIN) $(BL2_BIN).img $(BL2_BIN) 
 
-$(BL1_BIN):      $(OBJS_BL1)
+$(BL1_BIN):	$(OBJS_BL1)
 	$(LD) -T $(BL1_LDS) -o $(BL1_ELF) -Map BL1.map $(OBJS_BL1)
 	$(OBJCOPY) -O binary $(BL1_ELF) $(BL1_BIN)
 
 $(BL1_BIN).boot:	$(BL1_BIN) $(IMGMAKE)
 	$(IMGMAKE) ./$(BL1_BIN) ./$(BL1_BIN).boot
 
-$(BL2_BIN):   $(BL2_OBJS_ASM) $(BL2_OBJS_C)
-	$(LD) -T $(BL2_LDS) -o $(BL2_ELF) -Map $(BL2_ROOT_DIR)/BL2.map $(BL2_OBJS_ASM) $(BL2_OBJS_C) $(LDFLAGS) $(LIBS_DIR) $(LIBS)
+$(BL2_BIN):  $(BL2_OBJS)
+	$(info ********** $(BL2_BIN) RULE RUNNING ***********)
+	$(LD) -T $(BL2_LDS) -o $(BL2_ELF) -Map $(BL2_ROOT_DIR)/BL2.map $(BL2_OBJS) $(LDFLAGS) $(LIBS_DIR) $(LIBS)
 	$(OBJCOPY) -O binary $(BL2_ELF) $(BL2_BIN)
 
 $(BL2_BIN).img:	$(BL2_BIN) $(IMGMAKEBL2)
+	$(info ********** $(BL2_BIN).img RULE RUNNING ***********)
 	$(IMGMAKEBL2) $(BL2_BIN) $(BL2_BIN).img
 
 $(IMGMAKE):	
@@ -114,18 +119,27 @@ $(BL1_C_SRC_DIR)/%.o:	$(BL1_C_SRC_DIR)/%.c
 $(BL1_ASM_SRC_DIR)/%.o:	$(BL1_ASM_SRC_DIR)/%.s
 	$(AS) -c $(AFLAGS) -I $(BL1_INCLUDES_DIR)  $< -o $@
 
-$(BL2_ASM_SRC_DIR)/%.o:	$(BL2_ASM_SRC_DIR)/%.s
+
+
+
+$(BL2_ASM_SRC_DIR)/%.o:	$(BL2_ASM_SRC_DIR)/%.s 
 	$(AS) -c $(AFLAGS) -I $(BL2_INCLUDES_DIR)  $< -o $@
+
+$(BL2_ASM_SRC_DIR)/%.o: $(BL2_ASM_SRC_DIR)/%.S
+	$(CC) -c $(AFLAGS) -I $(BL2_INCLUDES_DIR)  $< -o $@
 
 $(BL2_C_SRC_DIR)/%.o:	$(BL2_C_SRC_DIR)/%.c 
 	$(CC) -c $(CFLAGS) -I $(BL2_INCLUDES_DIR)  $< -o $@ 
 
+
+
+
 $(BL1_ELF): $(OBJS_BL1)
+	$(warning ********** BL1_ELF RULE RUNNING ***********)
 	$(CC) $(OBJS_BL1) $(CFLAGS) -o $@
 
-
-$(BL2_ELF): $(BL2_OBJS_ASM) $(BL2_OBJS_C)
-	$(CC) $(BL2_OBJS_ASM) $(BL2_OBJS_C) $(CFLAGS) -o $@
+$(BL2_ELF): $(BL2_OBJS)
+	$(CC) $(BL2_OBJS) $(CFLAGS) -o $@
 
 
 readFileBytes:

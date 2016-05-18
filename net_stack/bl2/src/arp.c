@@ -3,8 +3,9 @@
 #include "in.h"
 #include "terminal.h"
 #include "timer.h"
+#include "io.h"
 
-#define ARP_DEBUG
+//#define ARP_DEBUG
 
 
 #ifndef	CONFIG_ARP_TIMEOUT
@@ -87,9 +88,9 @@ void arp_raw_request(struct in_addr source_ip, const unsigned char *target_ethad
 	arp->ar_pln = ARP_PLEN;
 	arp->ar_op = htons(ARPOP_REQUEST);
 
-	memcpy(&arp->ar_sha, net_ethaddr, ARP_HLEN);	/* source ET addr */
+	ul_memcpy(&arp->ar_sha, net_ethaddr, ARP_HLEN);	/* source ET addr */
 	net_write_ip(&arp->ar_spa, source_ip);		/* source IP addr */
-	memcpy(&arp->ar_tha, target_ethaddr, ARP_HLEN);	/* target ET addr */
+	ul_memcpy(&arp->ar_tha, target_ethaddr, ARP_HLEN);	/* target ET addr */
 	net_write_ip(&arp->ar_tpa, target_ip);		/* target IP addr */
 
 	net_send_packet(arp_tx_packet, eth_hdr_size + ARP_HDR_SIZE);
@@ -144,7 +145,6 @@ void arp_receive(struct ethernet_hdr *et, struct ip_udp_hdr *ip, int len)
 		print_format("This ARP request concerns us!\n\r");
 	else
 		print_format("This ARP request is not for us!\n\r");
-	while(1);
 #endif	
 	if (ntohs(arp->ar_hrd) != ARP_ETHER)
 		return;
@@ -164,14 +164,16 @@ void arp_receive(struct ethernet_hdr *et, struct ip_udp_hdr *ip, int len)
 	switch (ntohs(arp->ar_op)) {
 		case ARPOP_REQUEST:
 			/* reply with our IP address */
+#ifdef ARP_DEBUG
 			print_format("Got ARP REQUEST, return our IP\n\r");
+#endif
 			pkt = (unsigned char *)et;
 			eth_hdr_size = net_update_ether(et, et->et_src, PROT_ARP);
 			pkt += eth_hdr_size;
 			arp->ar_op = htons(ARPOP_REPLY);
-			memcpy(&arp->ar_tha, &arp->ar_sha, ARP_HLEN);
+			ul_memcpy(&arp->ar_tha, &arp->ar_sha, ARP_HLEN);
 			net_copy_ip(&arp->ar_tpa, &arp->ar_spa);
-			memcpy(&arp->ar_sha, net_ethaddr, ARP_HLEN);
+			ul_memcpy(&arp->ar_sha, net_ethaddr, ARP_HLEN);
 			net_copy_ip(&arp->ar_spa, &net_ip);
 
 // #ifdef CONFIG_CMD_LINK_LOCAL
@@ -212,14 +214,14 @@ void arp_receive(struct ethernet_hdr *et, struct ip_udp_hdr *ip, int len)
 
 				/* save address for later use */
 				if (arp_wait_packet_ethaddr != NULL)
-					memcpy(arp_wait_packet_ethaddr,
+					ul_memcpy(arp_wait_packet_ethaddr,
 							&arp->ar_sha, ARP_HLEN);
 
 			arp_handler((unsigned char *)arp, 0, reply_ip_addr,0, len);
 
 				/* set the mac address in the waiting packet's header
 				   and transmit it */
-				memcpy(((struct ethernet_hdr *)net_tx_packet)->et_dest,
+				ul_memcpy(((struct ethernet_hdr *)net_tx_packet)->et_dest,
 						&arp->ar_sha, ARP_HLEN);
 				net_send_packet(net_tx_packet, arp_wait_tx_packet_size);
 

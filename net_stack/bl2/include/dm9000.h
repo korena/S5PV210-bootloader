@@ -154,7 +154,6 @@ int dm9000_initialize(void);
 void dm9000_write_srom_word(int offset, uint16_t val);
 void dm9000_read_srom_word(int offset, uint8_t *to);
 
-#define CONFIG_DM9000_DEBUG
 
 /**************** TINY210 *************/
 #define SROMC_BW 		0xE8000000
