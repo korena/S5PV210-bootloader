@@ -62,7 +62,7 @@ void arp_request(void)
 		net_arp_wait_reply_ip = net_arp_wait_packet_ip;
 	}
 
-	//	arp_raw_request(net_ip, net_null_ethaddr, net_arp_wait_reply_ip);
+		arp_raw_request(net_ip, net_null_ethaddr, net_arp_wait_reply_ip);
 }
 
 
@@ -73,7 +73,7 @@ void arp_raw_request(struct in_addr source_ip, const unsigned char *target_ethad
 	struct arp_hdr *arp;
 	int eth_hdr_size;
 
-	print_format("ARP broadcast %d\n", arp_wait_try);
+	print_format("ARP broadcast %d\n\r", arp_wait_try);
 
 	pkt = arp_tx_packet;
 
@@ -94,6 +94,31 @@ void arp_raw_request(struct in_addr source_ip, const unsigned char *target_ethad
 	net_write_ip(&arp->ar_tpa, target_ip);		/* target IP addr */
 
 	net_send_packet(arp_tx_packet, eth_hdr_size + ARP_HDR_SIZE);
+}
+
+uint32_t arp_timeout_check(void)
+{
+	unsigned long t;
+
+	if (!net_arp_wait_packet_ip.s_addr)
+		return 0;
+
+	t = get_timer(0);
+
+	/* check for arp timeout */
+	if ((t - arp_wait_timer_start) > ARP_TIMEOUT) {
+		arp_wait_try++;
+
+		if (arp_wait_try >= ARP_TIMEOUT_COUNT) {
+			print_format("\n\rARP Retry count exceeded; starting again\n\r");
+			arp_wait_try = 0;
+			net_set_state(NETLOOP_FAIL);
+		} else {
+			arp_wait_timer_start = t;
+			arp_request();
+		}
+	}
+	return 1;
 }
 
 void arp_receive(struct ethernet_hdr *et, struct ip_udp_hdr *ip, int len)
@@ -176,19 +201,6 @@ void arp_receive(struct ethernet_hdr *et, struct ip_udp_hdr *ip, int len)
 			ul_memcpy(&arp->ar_sha, net_ethaddr, ARP_HLEN);
 			net_copy_ip(&arp->ar_spa, &net_ip);
 
-// #ifdef CONFIG_CMD_LINK_LOCAL
-// 			/*
-// 			 * Work-around for brain-damaged Cisco equipment with
-// 			 *   arp-proxy enabled.
-// 			 *
-// 			 *   If the requesting IP is not on our subnet, wait 5ms to
-// 			 *   reply to ARP request so that our reply will overwrite
-// 			 *   the arp-proxy's instead of the other way around.
-// 			 */
-// 			if ((net_read_ip(&arp->ar_tpa).s_addr & net_netmask.s_addr) !=
-// 					(net_read_ip(&arp->ar_spa).s_addr & net_netmask.s_addr))
-// 				udelay(5000);
-// #endif
 			net_send_packet((unsigned char *)et, eth_hdr_size + ARP_HDR_SIZE);
 			return;
 
@@ -245,10 +257,7 @@ void arp_handler(unsigned char* packet,unsigned int dport,struct in_addr sip,uns
 	print_format((char*)packet);
 	print_format("\n\rdestination port:\t");
 	print_format("%d\n\r",dport);
-	char *ipAddr;
-	ip_to_string(sip,ipAddr);
-	print_format("IP address:\t");
-	print_format(ipAddr);
+	print_format("IP address: 0x%x\t",sip);
 	print_format("\n\rSource port used:\t");
 	print_format("%d\n\r",sport);
 	net_set_state(NETLOOP_SUCCESS);

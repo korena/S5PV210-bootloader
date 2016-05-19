@@ -21,5 +21,6 @@ SECTIONS
         __bss_start__ = .;
         .bss : { *(.bss) }
         __bss_end__ = .;    
+	end = .;
 }
 

@@ -25,6 +25,17 @@ int eth_register(struct eth_device *dev)
 	return 0;
 }
 
+int eth_init(void)
+{
+	if (!eth_current || (eth_current->state != ETH_STATE_ACTIVE))
+		return;
+	if(eth_current->init(eth_current) == 0){
+		eth_current->state = ETH_STATE_ACTIVE;
+		return 0;
+	}
+	return -1;
+}
+
 void eth_halt(void)
 {
 	if (!eth_current || (eth_current->state != ETH_STATE_ACTIVE))
@@ -39,6 +50,13 @@ int eth_is_active(struct eth_device *dev)
 		return 0;
 	else
 		return 1;
+}
+
+int eth_get_dev_index(void)
+{
+	if (!eth_current)
+		return -1;
+	return eth_current->index;
 }
 
 int eth_send(void *packet, int length){
@@ -95,3 +113,8 @@ int eth_rx(void)
 	return ret;
 }
 
+
+const char *eth_get_name(void)
+{
+	return eth_current ? eth_current->name : "unknown";
+}

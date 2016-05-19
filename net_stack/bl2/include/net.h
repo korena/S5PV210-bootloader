@@ -207,7 +207,8 @@ struct ip_udp_hdr {
 	uint16_t	udp_len;	/* Length of UDP packet		*/
 	uint16_t	udp_xsum;	/* Checksum			*/
 };
-
+#define IP_UDP_HDR_SIZE		(sizeof(struct ip_udp_hdr))
+#define UDP_HDR_SIZE		(IP_UDP_HDR_SIZE - IP_HDR_SIZE)
 
 #define PKTBUFSRX	4 // This is the length of the packet buffer,
 #define PKTSIZE_ALIGN	1536
@@ -215,7 +216,8 @@ struct ip_udp_hdr {
 //this value is just an assumption, we'll see if it fails
 
 uint8_t *net_rx_packets[PKTBUFSRX];
-extern unsigned char 	*net_rx_packet;
+extern unsigned char *net_rx_packet;
+extern unsigned char *net_tx_packet;
 #define CONFIG_SERVER_IP
 
 #define VLAN_NONE	4095			/* untagged */
@@ -228,8 +230,37 @@ enum proto_t {
 	TFTPSRV, TFTPPUT, LINKLOCAL
 };
 
+extern char net_boot_file_name[1024];/* Boot File name */
+/* The actual transferred size of the bootfile (in bytes) */
+extern uint32_t	net_boot_file_size;
+/* Boot file size in blocks as reported by the DHCP server */
+extern uint32_t net_boot_file_expected_size_in_blocks;
 
 
+
+/*
+ *	A timeout handler.  Called after time interval has expired.
+ */
+typedef void thand_f(void);
+
+/**
+ * An incoming packet handler.
+ * @param pkt    pointer to the application packet
+ * @param dport  destination UDP port
+ * @param sip    source IP address
+ * @param sport  source UDP port
+ * @param len    packet length
+ */
+typedef void rxhand_f(unsigned char *pkt, unsigned dport,
+		      struct in_addr sip, unsigned sport,
+		      unsigned len);
+/* Callbacks */
+rxhand_f *net_get_udp_handler(void);	/* Get UDP RX packet handler */
+void net_set_udp_handler(rxhand_f *);	/* Set UDP RX packet handler */
+//rxhand_f *net_get_arp_handler(void);	/* Get ARP RX packet handler */
+//void net_set_arp_handler(rxhand_f *);	/* Set ARP RX packet handler */
+//void net_set_icmp_handler(rxhand_icmp_f *f); /* Set ICMP RX handler */
+void net_set_timeout_handler(unsigned long, thand_f *);/* Set timeout handler */
 
 /* Network loop state */
 enum net_loop_state {
@@ -241,11 +272,15 @@ enum net_loop_state {
 extern enum net_loop_state net_state;
 
 
-
 /*PROTOTYPES*/ 
 int net_loop(enum proto_t protocol);
 void net_init(void);
+/* Load failed.	 Start again. */
+int net_start_again(void);
 void ip_to_string(struct in_addr x, char *s);
+struct in_addr string_to_ip(const char *s);
+/* Get size of the ethernet header when we send */
+int net_eth_hdr_size(void);
 int net_set_ether(unsigned char *xet, const unsigned char *dest_ethaddr, uint32_t prot);
 int net_update_ether(struct ethernet_hdr *et, unsigned char *addr, unsigned int prot);
 void net_process_received_packet(unsigned char *in_packet, int len);
@@ -296,11 +331,39 @@ static inline void net_send_packet(unsigned char *pkt, int len)
 	(void) eth_send(pkt, len);
 }
 
+/*
+ * Transmit "net_tx_packet" as UDP packet, performing ARP request if needed
+ *  (ether will be populated)
+ *
+ * @param ether Raw packet buffer
+ * @param dest IP address to send the datagram to
+ * @param dport Destination UDP port
+ * @param sport Source UDP port
+ * @param payload_len Length of data after the UDP header
+ */
+int net_send_udp_packet(unsigned char *ether, struct in_addr dest, int dport,
+			int sport, int payload_len);
+
 static inline void net_set_state(enum net_loop_state state)
 {
 	print_format("--- NetState set to %d\n\r", state);
 	net_state = state;
 }
+/* Set ethernet header; returns the size of the header */
+void net_set_ip_header(unsigned char *pkt, struct in_addr dest, struct in_addr source);
+int net_set_ether(unsigned char *xet, const unsigned char *dest_ethaddr, uint32_t prot);
+int net_update_ether(struct ethernet_hdr *et, unsigned char *addr, unsigned int prot);
+void net_set_udp_header(unsigned char *pkt, struct in_addr dest, int dport,
+				int sport, int len);
+
+/**
+ * compute_ip_checksum() - Compute IP checksum
+ *
+ * @addr:	Address to check (must be 16-bit aligned)
+ * @nbytes:	Number of bytes to check (normally a multiple of 2)
+ * @return 16-bit IP checksum
+ */
+unsigned compute_ip_checksum(const void *addr, unsigned nbytes);
 
 
 #endif

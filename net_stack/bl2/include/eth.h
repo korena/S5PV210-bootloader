@@ -70,11 +70,14 @@ struct eth_ops {
 
 
 /*prototypes*/
+
+int eth_init(void);
 int eth_send(void *packet,int length);
 int eth_rx(void);
 void eth_halt(void);
 int eth_register(struct eth_device *dev);
-
+const char *eth_get_name(void);		/* get name of current device */
+int eth_get_dev_index(void);
 /*ethernet device through which operations are performed*/
 struct eth_device  *eth_current;
 

@@ -748,7 +748,7 @@ int dm9000_initialize(void)
 		dev->send = dm9000_send;
 		dev->recv = dm9000_rx;
 		sprintf((char*)dev->name, "dm9000");
-
+		dev->index = 1;
 		regStat = eth_register(dev);
 
 		switch(regStat){

@@ -8,6 +8,7 @@ Adapted from http://www.simtec.co.uk/products/SWLINUX/files/booting_article.html
 #include "dm9000.h"
 #include "timer.h"
 #include "net.h"
+#include "configs.h"
 
 /* list of possible tags */
 #define ATAG_NONE       0x00000000
@@ -205,8 +206,6 @@ setup_end_tag(void)
 }
 
 #define MACH_SMDKV210 2456
-#define DRAM_BASE 0x20000000
-#define ZIMAGE_LOAD_ADDRESS (uint32_t*) (DRAM_BASE + 0x8000)  // 32k away from the base address of DRAM
 #define ZIMAGE_LOAD_END_ADDRESS 1516384 // TODO: no good, find a better way.
 #define INITRD_LOAD_ADDRESS DRAM_BASE + 0x800000
 #define INITRD_LOAD_END_ADDRESS 4096  // size of the ramdisk 
@@ -242,6 +241,7 @@ start_linux(void)
 {
     void (*theKernel)(uint32_t zero, uint32_t arch, uint32_t *params);
     uint32_t i = 0, j = 0,ret;
+    load_addr = (uint32_t) ZIMAGE_LOAD_ADDRESS;
     uint32_t *exec_at =  ZIMAGE_LOAD_ADDRESS;
     uint32_t *parm_at = (uint32_t *)( DRAM_BASE + 0x100) ;  // 256 bytes away from the base address of DRAM
     uint32_t machine_type;

@@ -1,11 +1,14 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
+#include "timer.h"
 #include "terminal.h"
 #include "net.h"
 #include "arp.h"
+#include "tftp.h"
 #include "in.h"
 #include "io.h"
+#include "configs.h"
 
 
 
@@ -17,6 +20,10 @@ static unsigned char net_pkt_buf[(PKTBUFSRX+1) * PKTSIZE_ALIGN + PKTALIGN];
 unsigned char 	*net_rx_packet;
 /* Current rx packet length */
 int	net_rx_packet_len;
+/* Current UDP RX packet handler */
+static rxhand_f *udp_packet_handler;
+/* Current ARP RX packet handler */
+static rxhand_f *arp_packet_handler;
 /* IP packet ID */
 static unsigned	net_ip_id;
 /* THE transmit packet */
@@ -35,11 +42,26 @@ const uint8_t net_bcast_ethaddr[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
 /* Network loop state */
 enum net_loop_state net_state;
+/* Tried all network devices */
+int net_restart_wrap;
+/* Current timeout handler */
+static thand_f *time_handler;
+/* Time base value */
+static ulong	time_start;
+/* Current timeout value */
+static ulong	time_delta;
+
+
 
 static unsigned long net_try_count = 0;
-static unsigned long net_boot_file_size= 0;
 static unsigned long net_restarted = 0;
 static unsigned long net_dev_exists = 0;
+/* Boot File name */
+char net_boot_file_name[1024];
+/* The actual transferred size of the bootfile (in bytes) */
+uint32_t net_boot_file_size;
+/* Boot file size in blocks as reported by the DHCP server */
+uint32_t net_boot_file_expected_size_in_blocks;
 
 struct in_addr string_to_ip(const char *s)
 {
@@ -90,27 +112,11 @@ void ip_to_string(struct in_addr x, char *s)
 static int net_check_prereq(enum proto_t protocol)
 {
 	switch (protocol) {
-		/* Fall through */
-	case PING:
-//		if (net_ping_ip.s_addr == 0) {
-//			print_format("*** ERROR: ping address not given\n");
-			return 1;
-//		}
-		goto common;
-	case SNTP:
-//		if (net_ntp_server.s_addr == 0) {
-//			print_format("*** ERROR: NTP server address not given\n");
-			return 1;
-//		}
-		goto common;
-		/* Fall through */
 	case TFTPGET:
-	case TFTPPUT:
 		if (net_server_ip.s_addr == 0) {
 			print_format("*** ERROR: `serverip' not set\n\r");
 			return 1;
 		}
-common:
 		/* Fall through */
 	case NETCONS:
 	case TFTPSRV:
@@ -119,12 +125,35 @@ common:
 			return 1;
 		}
 		/* Fall through */
+	case BOOTP:
+	case CDP:
+	case DHCP:
+	case LINKLOCAL:
+		if (memcmp(net_ethaddr, "\0\0\0\0\0\0", 6) == 0) {
+			int num = eth_get_dev_index();
+
+			switch (num) {
+			case -1:
+				print_format("*** ERROR: No ethernet found.\n");
+				return 1;
+			case 0:
+				print_format("*** ERROR: `ethaddr' not set\n");
+				break;
+			default:
+				print_format("*** ERROR: `eth%daddr' not set\n",
+				       num);
+				break;
+			}
+
+			net_start_again();
+			return 2;
+		}
+		/* Fall through */
 	default:
 		return 0;
 	}
 	return 0;		/* OK */
 }
-
 
 
 void net_init(void)
@@ -165,10 +194,52 @@ void net_init(void)
 
 }
 
+static void start_again_timeout_handler(void)
+{
+	net_set_state(NETLOOP_RESTART);
+}
 
+int net_start_again(void)
+{
+	int retry_forever = 0;
+	unsigned long retrycnt = 0;
+	int ret;
+
+		retrycnt = NET_RETRY;
+		retry_forever = NET_RETRY_FOREVER;
+
+	if ((!retry_forever) && (net_try_count >= retrycnt)) {
+		eth_halt();
+		net_set_state(NETLOOP_FAIL);
+		/*
+		 * We don't provide a way for the protocol to return an error,
+		 * but this is almost always the reason.
+		 */
+		return -ETIMEDOUT;
+	}
+
+	net_try_count++;
+
+	eth_halt();
+
+	ret = eth_init();
+	if (net_restart_wrap) {
+		net_restart_wrap = 0;
+		if (net_dev_exists) {
+			net_set_timeout_handler(10000UL,
+						start_again_timeout_handler);
+			net_set_udp_handler(NULL);
+		} else {
+			net_set_state(NETLOOP_FAIL);
+		}
+	} else {
+		net_set_state(NETLOOP_RESTART);
+	}
+	return ret;
+}
 
 /*
- * We want this to handle ARP,TFTP and PING, nothing more!
+ * We want this to handle ARP and TFTP, nothing more!
  * */
 int net_loop(enum proto_t protocol)
 {
@@ -181,17 +252,6 @@ int net_loop(enum proto_t protocol)
 
 	print_format("eth_start, calling net_init\n\r");
 	net_init();
-	//	if (eth_is_on_demand_init() || protocol != NETCONS) {
-	//		eth_halt();
-	//		eth_set_current();
-	//		ret = eth_init();
-	//		if (ret < 0) {
-	//			eth_halt();
-	//			return ret;
-	//		}
-	//	} else {
-	//		eth_init_state_only();
-	//	}
 restart:
 	net_set_state(NETLOOP_CONTINUE);
 
@@ -220,24 +280,7 @@ restart:
 			print_format("acting on chosen protocol ...\n\r");
 			switch (protocol) {
 				case TFTPGET:
-					/* always use ARP to get server ethernet address */
-		//			tftp_start(protocol);
-					break;
-				case BOOTP:
-		//			bootp_reset();
-		//			net_ip.s_addr = 0;
-		//			bootp_request();
-					break;
-				case PING:
-		//			ping_start();
-					break;
-#if defined(CONFIG_CMD_SNTP)
-				case SNTP:
-		//			sntp_start();
-					break;
-#endif
-				case LINKLOCAL:
-		//			link_local_start();
+					tftp_start(protocol);
 					break;
 				default:
 					break;
@@ -262,48 +305,45 @@ restart:
 		 */
 		ethStatus = eth_rx();
 
-		//		if (arp_timeout_check() > 0) {
-		//		    time_start = get_timer(0);
-		//		}
+				if (arp_timeout_check() > 0) {
+				    time_start = get_timer(0);
+				}
 
 		/*
 		 *	Check for a timeout, and run the timeout handler
 		 *	if we have one.
 		 */
-		//		if (time_handler &&
-		//		    ((get_timer(0) - time_start) > time_delta)) {
-		//			thand_f *x;
-		//			print_format("--- net_loop timeout\n");
-		//			x = time_handler;
-		//			time_handler = (thand_f *)0;
-		//			(*x)();
-		//		}
+				if (time_handler &&
+				    ((get_timer(0) - time_start) > time_delta)) {
+					thand_f *x;
+					print_format("--- net_loop timeout\n\r");
+					x = time_handler;
+					time_handler = (thand_f *)0;
+					(*x)();
+				}
 
 		if (net_state == NETLOOP_FAIL)
-			print_format("some failure was encounterd, good luck debugging !!\n\r");
+			ret = net_start_again();
+
 		switch (net_state) {
-			case NETLOOP_RESTART: /*I should never happen ..*/
+			case NETLOOP_RESTART: 
 				net_restarted = 1;
 				goto restart;
 
 			case NETLOOP_SUCCESS:
-//				net_cleanup_loop(); // clears handlers, not using it  ...
-//				if (net_boot_file_size > 0) {
-//					print_format("Bytes transferred = %d (%x hex)\n\r",
-//							net_boot_file_size, net_boot_file_size);
-//				}
-//				if (protocol != NETCONS)
-//					eth_halt();
-//				eth_set_last_protocol(protocol);
-//
-//				ret = net_boot_file_size;
+				if (net_boot_file_size > 0) {
+					print_format("Bytes transferred = %d (%x hex)\n\r",
+							net_boot_file_size, net_boot_file_size);
+				}
+				if (protocol != NETCONS)
+					eth_halt();
+				//eth_set_last_protocol(protocol);
+
+				ret = net_boot_file_size;
 				print_format("--- net_loop Success!\n\r");
 				goto done;
 
 			case NETLOOP_FAIL:
-	//			net_cleanup_loop();
-				/* Invalidate the last protocol */
-				//eth_set_last_protocol(BOOTP);
 				print_format("--- net_loop Fail!\n");
 				goto done;
 
@@ -448,11 +488,73 @@ void net_process_received_packet(unsigned char *in_packet, int len)
 
 }
 
+int net_send_udp_packet(unsigned char *ether, struct in_addr dest, int dport, int sport,
+		int payload_len)
+{
+	unsigned char *pkt;
+	int eth_hdr_size;
+	int pkt_hdr_size;
 
+	/* make sure the net_tx_packet is initialized (net_init() was called) */
+	if (net_tx_packet == NULL)
+		return -1;
+
+	/* convert to new style broadcast */
+	if (dest.s_addr == 0)
+		dest.s_addr = 0xFFFFFFFF;
+
+	/* if broadcast, make the ether address a broadcast and don't do ARP */
+	if (dest.s_addr == 0xFFFFFFFF)
+		ether = (unsigned char *)net_bcast_ethaddr;
+
+	pkt = (unsigned char *)net_tx_packet;
+
+	eth_hdr_size = net_set_ether(pkt, ether, PROT_IP);
+	pkt += eth_hdr_size;
+	net_set_udp_header(pkt, dest, dport, sport, payload_len);
+	pkt_hdr_size = eth_hdr_size + IP_UDP_HDR_SIZE;
+
+	/* if MAC address was not discovered yet, do an ARP request */
+	if (memcmp(ether, net_null_ethaddr, 6) == 0) {
+		print_format("sending ARP for 0x%xI4\n\r",dest.s_addr);
+
+		/* save the ip and eth addr for the packet to send after arp */
+		net_arp_wait_packet_ip = dest;
+		arp_wait_packet_ethaddr = ether;
+
+		/* size of the waiting packet */
+		arp_wait_tx_packet_size = pkt_hdr_size + payload_len;
+
+		/* and do the ARP request */
+		arp_wait_try = 1;
+		arp_wait_timer_start = get_timer(0);
+		arp_request();
+		return 1;	/* waiting */
+	} else {
+		print_format("sending UDP to 0x%xI4\n\r",dest.s_addr);
+		net_send_packet(net_tx_packet, pkt_hdr_size + payload_len);
+		return 0;	/* transmitted */
+	}
+}
 
 
 
 /*   header fillers   */
+
+
+int net_eth_hdr_size(void)
+{
+	unsigned short myvlanid;
+
+	myvlanid = ntohs(net_our_vlan);
+	if (myvlanid == (unsigned short)-1)
+		myvlanid = VLAN_NONE;
+
+	return ((myvlanid & VLAN_IDMASK) == VLAN_NONE) ? ETHER_HDR_SIZE :
+		VLAN_ETHER_HDR_SIZE;
+}
+
+
 
 int net_set_ether(unsigned char *xet, const unsigned char *dest_ethaddr, uint32_t prot)
 {
@@ -499,5 +601,108 @@ int net_update_ether(struct ethernet_hdr *et, unsigned char *addr, unsigned int 
 		struct e802_hdr *et802 = (struct e802_hdr *)et;
 		et802->et_prot = htons(prot);
 		return E802_HDR_SIZE;
+	}
+}
+
+
+void net_set_ip_header(unsigned char *pkt, struct in_addr dest, struct in_addr source)
+{
+	struct ip_udp_hdr *ip = (struct ip_udp_hdr *)pkt;
+
+	/*
+	 *	Construct an IP header.
+	 */
+	/* IP_HDR_SIZE / 4 (not including UDP) */
+	ip->ip_hl_v  = 0x45;
+	ip->ip_tos   = 0;
+	ip->ip_len   = htons(IP_HDR_SIZE);
+	ip->ip_id    = htons(net_ip_id++);
+	ip->ip_off   = htons(IP_FLAGS_DFRAG);	/* Don't fragment */
+	ip->ip_ttl   = 255;
+	ip->ip_sum   = 0;
+	/* already in network byte order */
+	net_copy_ip((void *)&ip->ip_src, &source);
+	/* already in network byte order */
+	net_copy_ip((void *)&ip->ip_dst, &dest);
+}
+
+
+void net_set_udp_header(unsigned char *pkt, struct in_addr dest, int dport, int sport,
+			int len)
+{
+	struct ip_udp_hdr *ip = (struct ip_udp_hdr *)pkt;
+
+	/*
+	 *	If the data is an odd number of bytes, zero the
+	 *	byte after the last byte so that the checksum
+	 *	will work.
+	 */
+	if (len & 1)
+		pkt[IP_UDP_HDR_SIZE + len] = 0;
+
+	net_set_ip_header(pkt, dest, net_ip);
+	ip->ip_len   = htons(IP_UDP_HDR_SIZE + len);
+	ip->ip_p     = IPPROTO_UDP;
+	ip->ip_sum   = compute_ip_checksum(ip, IP_HDR_SIZE);
+
+	ip->udp_src  = htons(sport);
+	ip->udp_dst  = htons(dport);
+	ip->udp_len  = htons(UDP_HDR_SIZE + len);
+	ip->udp_xsum = 0;
+}
+
+unsigned compute_ip_checksum(const void *vptr, unsigned nbytes)
+{
+	int sum, oddbyte;
+	const unsigned short *ptr = vptr;
+
+	sum = 0;
+	while (nbytes > 1) {
+		sum += *ptr++;
+		nbytes -= 2;
+	}
+	if (nbytes == 1) {
+		oddbyte = 0;
+		((uint8_t *)&oddbyte)[0] = *(uint8_t *)ptr;
+		((uint8_t *)&oddbyte)[1] = 0;
+		sum += oddbyte;
+	}
+	sum = (sum >> 16) + (sum & 0xffff);
+	sum += (sum >> 16);
+	sum = ~sum & 0xffff;
+
+	return sum;
+}
+
+
+static void dummy_handler(unsigned char *pkt, unsigned dport,
+			struct in_addr sip, unsigned sport,
+			unsigned len)
+{
+}
+
+rxhand_f *net_get_udp_handler(void)
+{
+	return udp_packet_handler;
+}
+void net_set_udp_handler(rxhand_f *f)
+{
+	print_format("--- net_loop UDP handler set \n\r", f);
+	if (f == NULL)
+		udp_packet_handler = dummy_handler;
+	else
+		udp_packet_handler = f;
+}
+
+void net_set_timeout_handler(unsigned long iv, thand_f *f)
+{
+	if (iv == 0) {
+		print_format("--- net_loop timeout handler cancelled\n\r");
+		time_handler = (thand_f *)0;
+	} else {
+		print_format("--- net_loop timeout handler set\n\r");
+		time_handler = f;
+		time_start = get_timer(0);
+		time_delta = iv/1000; // timeout in milliseconds/1000
 	}
 }

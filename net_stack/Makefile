@@ -81,8 +81,8 @@ BL2_OBJS_C    = $(BL2_SRCs_C:.c=.o)
 //BL2_OBJS      = $(BL2_SRCs_ASM:.s=.o) $(BL2_SRCs_ASM:.S=.o) $(BL2_SRCs_C:.c=.o) 
 BL2_OBJS      = $(patsubst %.s,%.o,$(wildcard $(BL2_ASM_SRC_DIR)/*.s)) $(patsubst %.S,%.o,$(wildcard $(BL2_ASM_SRC_DIR)/*.S)) $(patsubst %.c,%.o,$(wildcard $(BL2_C_SRC_DIR)/*.c)) 
 CFLAGS = -Os  -Wall -march=armv7-a
-LDFLAGS = -nostdlib  
-LIBS = -lgcc -lc 
+LDFLAGS = --specs=rdimon.specs -lrdimon -nostartfiles 
+LIBS = -lgcc -lc -lm -lg 
 AFLAGS = -march=armv7-a
 CFLAGS_HOST = -Os -Wall
 
@@ -97,7 +97,7 @@ $(BL1_BIN).boot:	$(BL1_BIN) $(IMGMAKE)
 
 $(BL2_BIN):  $(BL2_OBJS)
 	$(info ********** $(BL2_BIN) RULE RUNNING ***********)
-	$(LD) -T $(BL2_LDS) -o $(BL2_ELF) -Map $(BL2_ROOT_DIR)/BL2.map $(BL2_OBJS) $(LDFLAGS) $(LIBS_DIR) $(LIBS)
+	$(CC) -T $(BL2_LDS) -o $(BL2_ELF) $(BL2_OBJS) $(LDFLAGS) $(LIBS_DIR) $(LIBS)
 	$(OBJCOPY) -O binary $(BL2_ELF) $(BL2_BIN)
 
 $(BL2_BIN).img:	$(BL2_BIN) $(IMGMAKEBL2)

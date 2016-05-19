@@ -12,6 +12,7 @@
 
 extern void uart_print(const char* str);
 extern void uart_print_hex(uint32_t integer);
+extern void uart_print_string(const char* str,uint32_t len);
 
 
 
