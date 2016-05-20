@@ -106,9 +106,12 @@ uint32_t arp_timeout_check(void)
 	t = get_timer(0);
 
 	/* check for arp timeout */
-	if ((t - arp_wait_timer_start) > ARP_TIMEOUT) {
+	uint32_t time_passed = get_timer(arp_wait_timer_start);
+#ifdef ARP_DEBUG
+	print_format("time passed = %d ms\n\r",time_passed);
+#endif
+	if ((time_passed) > ARP_TIMEOUT) {
 		arp_wait_try++;
-
 		if (arp_wait_try >= ARP_TIMEOUT_COUNT) {
 			print_format("\n\rARP Retry count exceeded; starting again\n\r");
 			arp_wait_try = 0;
@@ -221,15 +224,13 @@ void arp_receive(struct ethernet_hdr *et, struct ip_udp_hdr *ip, int len)
 
 			/* matched waiting packet's address */
 			if (reply_ip_addr.s_addr == net_arp_wait_reply_ip.s_addr) {
-				print_format("Got ARP REPLY, set eth addr (%x)\n\r",
-						arp->ar_data);
-
+				print_format("Got ARP REPLY, set eth addr\n\r");
 				/* save address for later use */
 				if (arp_wait_packet_ethaddr != NULL)
 					ul_memcpy(arp_wait_packet_ethaddr,
 							&arp->ar_sha, ARP_HLEN);
 
-			arp_handler((unsigned char *)arp, 0, reply_ip_addr,0, len);
+//			arp_handler((unsigned char *)arp, 0, reply_ip_addr,0, len);
 
 				/* set the mac address in the waiting packet's header
 				   and transmit it */

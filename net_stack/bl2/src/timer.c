@@ -40,8 +40,7 @@ static uint32_t get_tick(void){
 
 
 /**
-* returns increments in multiples of ~1 ms
-* since base time.
+* returns increments in multiples of ~1 ms since base time.
 * this function has an accomulating error of about 5% for every second, 
 * but acceptable for timeouts in the network stack.
 */

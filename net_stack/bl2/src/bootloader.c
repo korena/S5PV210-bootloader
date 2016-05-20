@@ -246,15 +246,11 @@ start_linux(void)
     uint32_t *parm_at = (uint32_t *)( DRAM_BASE + 0x100) ;  // 256 bytes away from the base address of DRAM
     uint32_t machine_type;
 
-    print_format("address 0x8800_0000 contains: 0x%x \n\r",*((uint32_t *)0x88000000));
+   // debug_print("about to copy linux image to load address: ");
+   //     uart_print_address(exec_at);
+   //	ret = load_image((uint32_t)ZIMAGE_START_BLOCK_NUMBER,(uint32_t*)exec_at,(uint16_t)2666);    /* copy image into RAM */
 
-
-
-    debug_print("about to copy linux image to load address: ");
-	uart_print_address(exec_at);
-   	ret = load_image((uint32_t)ZIMAGE_START_BLOCK_NUMBER,(uint32_t*)exec_at,(uint16_t)2666);    /* copy image into RAM */
-
-    debug_print("done copying linux image ...\n\r");
+   // debug_print("done copying linux image ...\n\r");
 
 //    debug_print("about to copy ramdisk image ...");
 
@@ -262,37 +258,46 @@ start_linux(void)
 
 //    debug_print("done copying ramdisk image ...");
 
-    debug_print("setting up ATAGS ...\n\r");
-
-    setup_tags(parm_at);                    /* sets up parameters */
-
-    machine_type = 3466;	              /* get machine type */
 
     theKernel = (void (*)(uint32_t, uint32_t, uint32_t*))exec_at; /* set the kernel address */
     
-//	debug_print("jumping to the kernel ... brace yourself!\n\r\0");
- 
-//      asm("mrc p15, 0, r1, c1, c0, 0"); /* Read Control Register configuration data*/
-//	asm("bic r1, r1, #(0x1 << 12)");  /* Disable I Cache*/
-//	asm("bic r1, r1, #(0x1 << 2)");   /* Disable D Cache*/
-//	asm("mcr p15, 0, r1, c1, c0, 0"); /* Write Control Register configuration data*/
-
-//     theKernel(0, machine_type, parm_at);    /* jump to kernel with register set */
 	
 	
 
 	print_format("Setting up timers next ...\n\r");
 	init_system_timer();	
 	init_timer();
-	
+//	uint32_t start_time = get_timer(0);
+//
+//	while(1){
+//		print_format("time difference in ms is %d\n\r",start_time - get_timer(0));
+//		udelay(1000000);
+//	}
+	print_format("fetching kernel ... \n\r");
+//	net_loop(TFTPGET);
 	net_loop(ARP);
+	print_format("kernel loaded to RAM ...\n\r");
+    	debug_print("setting up ATAGS ...\n\r");
 
-	uint32_t start_time = get_timer(0);
+    	setup_tags(parm_at);                    /* sets up parameters */
 
-	while(1){
-		print_format("time difference in ms is %d\n\r",get_timer(start_time));
-		udelay(1000000);
-	}
+    	machine_type = 3466;	              /* get machine type */
+
+	debug_print("jumping to the kernel ... brace yourself!\n\r\0");
+ 
+	asm("mrc p15, 0, r1, c1, c0, 0"); /* Read Control Register configuration data*/
+	asm("bic r1, r1, #(0x1 << 12)");  /* Disable I Cache*/
+	asm("bic r1, r1, #(0x1 << 2)");   /* Disable D Cache*/
+	asm("mcr p15, 0, r1, c1, c0, 0"); /* Write Control Register configuration data*/
+
+	theKernel(0, machine_type, parm_at);    /* jump to kernel with registers set */
+
+//	uint32_t start_time = get_timer(0);
+
+//	while(1){
+//		print_format("time difference in ms is %d\n\r",get_timer(start_time));
+//		udelay(1000000);
+//	}
 
     return 0;
 }

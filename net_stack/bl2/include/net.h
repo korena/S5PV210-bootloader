@@ -363,7 +363,7 @@ void net_set_udp_header(unsigned char *pkt, struct in_addr dest, int dport,
  * @nbytes:	Number of bytes to check (normally a multiple of 2)
  * @return 16-bit IP checksum
  */
-unsigned compute_ip_checksum(const void *addr, unsigned nbytes);
+ unsigned compute_ip_checksum(const void *addr, unsigned nbytes);
 
 
 #endif

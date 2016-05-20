@@ -6,8 +6,6 @@
  *                Luca Ceresoli <luca.ceresoli@comelit.it>
  */
 
-//#include <common.h>
-//#include <command.h>
 #include "mapmem.h"
 #include "net.h"
 #include "tftp.h"
@@ -21,10 +19,14 @@
 //#include <flash.h>
 //#endif
 
+
+
+#define TFTP_DEBUG 1
+
 /* Well known TFTP port # */
 #define WELL_KNOWN_PORT	69
 /* Millisecs to timeout for lost pkt */
-#define TIMEOUT		5000UL
+#define TIMEOUT		20000UL
 #ifndef	CONFIG_NET_RETRY_COUNT
 /* # of timeouts before giving up */
 # define TIMEOUT_COUNT	10
@@ -263,7 +265,7 @@ static void tftp_send(void)
 #ifdef TFTP_DEBUG
 		uart_print("send option timeout ");
 		uart_print_string((char *)pkt,strlen((char *)pkt));
-		uart_print(" ms\n\r");
+		uart_print(" ms\n\r"); //FIXME: something is wrong here, just implement proper printf!
 #endif
 		pkt += strlen((char *)pkt) + 1;
 #ifdef CONFIG_TFTP_TSIZE
@@ -322,8 +324,15 @@ static void tftp_handler(unsigned char *pkt, uint32_t dest, struct in_addr sip,
 	uint16_t proto;  //XXX changed type from __be16
 	uint16_t *s;     //XXX changed type from __be16
 	int i;
+#if TFTP_DEBUG
+	print_format("tftp_handler called ...\n\r");
+#endif
+
 
 	if (dest != tftp_our_port) {
+#if TFTP_DEBUG
+	print_format("tftp not for us!\n\r");
+#endif
 			return;
 	}
 	if (tftp_state != STATE_SEND_RRQ && src != tftp_remote_port &&
@@ -345,6 +354,9 @@ static void tftp_handler(unsigned char *pkt, uint32_t dest, struct in_addr sip,
 		break;
 
 	default:
+#if TFTP_DEBUG
+		print_format("Weird TFTP proto\n\r");
+#endif
 		break;
 
 	case TFTP_OACK:
@@ -427,6 +439,9 @@ static void tftp_handler(unsigned char *pkt, uint32_t dest, struct in_addr sip,
 		 *	Acknowledge the block just received, which will prompt
 		 *	the remote for the next one.
 		 */
+#if TFTP_DEBUG
+		print_format("\t\tAchnowledging receipt\n\r");
+#endif
 		tftp_send();
 
 		if (len < tftp_block_size)
@@ -481,7 +496,7 @@ void tftp_start(enum proto_t protocol)
 #endif
 	tftp_remote_ip = net_server_ip;
 	if (net_boot_file_name[0] == '\0') {
-		strncpy(tftp_filename, "zImage.img", MAX_LEN);
+		strncpy(tftp_filename, "zImage", MAX_LEN);
 		tftp_filename[MAX_LEN - 1] = 0;
 
 		uart_print("*** Warning: no boot file name; using ");
@@ -503,7 +518,7 @@ void tftp_start(enum proto_t protocol)
 	uart_print("Using ");
 	uart_print_string(eth_get_name(),strlen(eth_get_name()));
 	uart_print( "Device\n\r");
-	print_format("TFTP from server 0x%xI4; our IP address is 0x%xI4",
+	print_format("TFTP from server 0x%x; our IP address is 0x%x",
 	       tftp_remote_ip, net_ip);
 	/* Check if we need to send across this subnet */
 	if (net_gateway.s_addr && net_netmask.s_addr) {

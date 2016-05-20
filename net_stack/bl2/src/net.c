@@ -12,7 +12,7 @@
 
 
 
-//#define NET_DEBUG
+#define NET_DEBUG
 
 
 static unsigned char net_pkt_buf[(PKTBUFSRX+1) * PKTSIZE_ALIGN + PKTALIGN];
@@ -90,24 +90,14 @@ struct in_addr string_to_ip(const char *s)
 
 void ip_to_string(struct in_addr x, char *s)
 {
-	char temp_dest[16];
-	char temp_num[4];
-	print_format("first\n\r");
 	x.s_addr = ntohl(x.s_addr);
-      	printnum(temp_num,4,"%d",(int) ((x.s_addr >> 24) & 0xff));
-      	strcat(temp_dest,temp_num);
-      	strcat(temp_dest,".");  
-      	printnum(temp_num,4,"%d",(int) ((x.s_addr >> 16) & 0xff));
-      	strcat(temp_dest,temp_num);
-      	strcat(temp_dest,".");  
-      	printnum(temp_num,4,"%d",(int) ((x.s_addr >> 8) & 0xff));
-      	strcat(temp_dest,temp_num);
-      	strcat(temp_dest,".");  
-      	printnum(temp_num,4,"%d",(int) ((x.s_addr >> 0) & 0xff));
-      	strcat(temp_dest,temp_num);
-
+	sprintf(s, "%d.%d.%d.%d",
+		(int) ((x.s_addr >> 24) & 0xff),
+		(int) ((x.s_addr >> 16) & 0xff),
+		(int) ((x.s_addr >> 8) & 0xff),
+		(int) ((x.s_addr >> 0) & 0xff)
+	);
 }
-
 
 static int net_check_prereq(enum proto_t protocol)
 {
@@ -226,7 +216,7 @@ int net_start_again(void)
 	if (net_restart_wrap) {
 		net_restart_wrap = 0;
 		if (net_dev_exists) {
-			net_set_timeout_handler(10000UL,
+			net_set_timeout_handler(20000UL,
 						start_again_timeout_handler);
 			net_set_udp_handler(NULL);
 		} else {
@@ -314,7 +304,7 @@ restart:
 		 *	if we have one.
 		 */
 				if (time_handler &&
-				    ((get_timer(0) - time_start) > time_delta)) {
+				    ((get_timer(time_start)) > time_delta)) {
 					thand_f *x;
 					print_format("--- net_loop timeout\n\r");
 					x = time_handler;
@@ -337,7 +327,7 @@ restart:
 				}
 				if (protocol != NETCONS)
 					eth_halt();
-				//eth_set_last_protocol(protocol);
+			//	eth_set_last_protocol(protocol);
 
 				ret = net_boot_file_size;
 				print_format("--- net_loop Success!\n\r");
@@ -376,25 +366,25 @@ void net_process_received_packet(unsigned char *in_packet, int len)
 #ifdef NET_DEBUG
 	//TODO: This is where you should check if the ethernet header is actually populated with 
 	//      proper data, do this by dumping 
-	if(et){
-		print_format("pointer et is not NULL\n\r");
-		print_format("uint8_t et_dest[0] =0x%x \n\r",et->et_dest[0]);
-		print_format("uint8_t et_dest[1] =0x%x \n\r",et->et_dest[1]);
-		print_format("uint8_t et_dest[2] =0x%x \n\r",et->et_dest[2]);
-		print_format("uint8_t et_dest[3] =0x%x \n\r",et->et_dest[3]);
-		print_format("uint8_t et_dest[4] =0x%x \n\r",et->et_dest[4]);
-		print_format("uint8_t et_dest[5] =0x%x \n\r",et->et_dest[5]);
-		print_format("uint8_t et_src[0] = 0x%x \n\r",et->et_src[0]);
-		print_format("uint8_t et_src[1] = 0x%x \n\r",et->et_src[1]);
-		print_format("uint8_t et_src[2] = 0x%x \n\r",et->et_src[2]);
-		print_format("uint8_t et_src[3] = 0x%x \n\r",et->et_src[3]);
-		print_format("uint8_t et_src[4] = 0x%x \n\r",et->et_src[4]);
-		print_format("uint8_t et_src[5] = 0x%x \n\r",et->et_src[5]);
-		print_format("uint16_t et_protlen = 0x%x\n\r",et->et_protlen);
-	}else{
-		print_format("the pointer et is MULL\n\r");
-		while(1); // something is wrong, and you need to fix the bug.
-	}
+//	if(et){
+//		print_format("pointer et is not NULL\n\r");
+//		print_format("uint8_t et_dest[0] =0x%x \n\r",et->et_dest[0]);
+//		print_format("uint8_t et_dest[1] =0x%x \n\r",et->et_dest[1]);
+//		print_format("uint8_t et_dest[2] =0x%x \n\r",et->et_dest[2]);
+//		print_format("uint8_t et_dest[3] =0x%x \n\r",et->et_dest[3]);
+//		print_format("uint8_t et_dest[4] =0x%x \n\r",et->et_dest[4]);
+//		print_format("uint8_t et_dest[5] =0x%x \n\r",et->et_dest[5]);
+//		print_format("uint8_t et_src[0] = 0x%x \n\r",et->et_src[0]);
+//		print_format("uint8_t et_src[1] = 0x%x \n\r",et->et_src[1]);
+//		print_format("uint8_t et_src[2] = 0x%x \n\r",et->et_src[2]);
+//		print_format("uint8_t et_src[3] = 0x%x \n\r",et->et_src[3]);
+//		print_format("uint8_t et_src[4] = 0x%x \n\r",et->et_src[4]);
+//		print_format("uint8_t et_src[5] = 0x%x \n\r",et->et_src[5]);
+//		print_format("uint16_t et_protlen = 0x%x\n\r",et->et_protlen);
+//	}else{
+//		print_format("the pointer et is MULL\n\r");
+//		while(1); // something is wrong, and you need to fix the bug.
+//	}
 #endif
 	/* too small packet? */
 	if (len < ETHER_HDR_SIZE)
@@ -426,19 +416,19 @@ void net_process_received_packet(unsigned char *in_packet, int len)
 		ip = (struct ip_udp_hdr *)(in_packet + ETHER_HDR_SIZE); // padding into the rx_packet by ethernet hdr size ...
 		len -= ETHER_HDR_SIZE;
 #ifdef NET_DEBUG
-		print_format("header length and version: 0x%x\n\r",ip->ip_hl_v);
-		print_format("type of service: 0x%x\n\r",ip->ip_tos);
-		print_format("total length: 0x%x\n\r",ip->ip_len);
-		print_format("identification: 0x%x\n\r",ip->ip_id);
-		print_format("fragment offset field: 0x%x\n\r",ip->ip_off);
-		print_format("time to live: 0x%x\n\r",ip->ip_ttl);
-		print_format("protocol: 0x%x\n\r",ip->ip_p);
-		print_format("checksum: 0x%x\n\r",ip->ip_sum);
-
-		print_format("UDP source port: 0x%x\n\r",ip->udp_src);
-		print_format("UDP dest port: 0x%x\n\r",ip->udp_dst);
-		print_format("length of UDP packet: 0x%x\n\r",ip->udp_len);
-		print_format("UDP checksum: 0x%x\n\r",ip->udp_xsum);
+//		print_format("header length and version: 0x%x\n\r",ip->ip_hl_v);
+//		print_format("type of service: 0x%x\n\r",ip->ip_tos);
+//		print_format("total length: 0x%x\n\r",ip->ip_len);
+//		print_format("identification: 0x%x\n\r",ip->ip_id);
+//		print_format("fragment offset field: 0x%x\n\r",ip->ip_off);
+//		print_format("time to live: 0x%x\n\r",ip->ip_ttl);
+//		print_format("protocol: 0x%x\n\r",ip->ip_p);
+//		print_format("checksum: 0x%x\n\r",ip->ip_sum);
+//
+//		print_format("UDP source port: 0x%x\n\r",ip->udp_src);
+//		print_format("UDP dest port: 0x%x\n\r",ip->udp_dst);
+//		print_format("length of UDP packet: 0x%x\n\r",ip->udp_len);
+//		print_format("UDP checksum: 0x%x\n\r",ip->udp_xsum);
 		
 		// dump the whole IP thing !
 //		for(int zip=0;zip<len;zip++){
@@ -482,6 +472,154 @@ void net_process_received_packet(unsigned char *in_packet, int len)
 		case PROT_ARP:
 			arp_receive(et, ip, len);
 			break;
+		case PROT_IP:
+		uart_print("Got IP\n\r");
+		/* Before we start poking the header, make sure it is there */
+		if (len < IP_UDP_HDR_SIZE) {
+#ifdef NET_DEBUG
+			print_format("len bad %d < %d\n\r", len,
+			      (ulong)IP_UDP_HDR_SIZE);
+#endif
+			return;
+		}
+		/* Check the packet length */
+		if (len < ntohs(ip->ip_len)) {
+#ifdef NET_DEBUG
+			print_format("len bad %d < %d\n\r", len, ntohs(ip->ip_len));
+#endif
+			return;
+		}
+		len = ntohs(ip->ip_len);
+#ifdef NET_DEBUG
+		print_format("len=%d, v=%x\n\r",
+			   len, ip->ip_hl_v & 0xff);
+#endif
+
+		/* Can't deal with anything except IPv4 */
+		if ((ip->ip_hl_v & 0xf0) != 0x40){
+#ifdef NET_DEBUG
+			print_format("Only IPv4 is handled\n\r");
+#endif
+			return;
+		}
+		/* Can't deal with IP options (headers != 20 bytes) */
+		if ((ip->ip_hl_v & 0x0f) > 0x05){
+#ifdef NET_DEBUG
+			print_format("IP options not supported\n\r");
+#endif
+			return;
+		}
+		/* Check the Checksum of the header */
+		if (!ip_checksum_ok((unsigned char *)ip, IP_HDR_SIZE)) {
+#ifdef NET_DEBUG
+			print_format("checksum bad\n\r");
+#endif
+			return;
+		}
+		/* If it is not for us, ignore it */
+		dst_ip = net_read_ip(&ip->ip_dst);
+		if (net_ip.s_addr && dst_ip.s_addr != net_ip.s_addr &&
+		    dst_ip.s_addr != 0xFFFFFFFF) {
+				return;
+		}
+		/* Read source IP address for later use */
+		src_ip = net_read_ip(&ip->ip_src);
+		/*
+		 * The function returns the unchanged packet if it's not
+		 * a fragment, and either the complete packet or NULL if
+		 * it is a fragment (if !CONFIG_IP_DEFRAG, it returns NULL)
+		 */
+		//XXX I'm assuming we'll never get any fragments
+		//ip = net_defragment(ip, &len);
+		
+		if (!ip)
+			return;
+		/*
+		 * watch for ICMP host redirects
+		 *
+		 * There is no real handler code (yet). We just watch
+		 * for ICMP host redirect messages. In case anybody
+		 * sees these messages: please contact me
+		 * (wd@denx.de), or - even better - send me the
+		 * necessary fixes :-)
+		 *
+		 * Note: in all cases where I have seen this so far
+		 * it was a problem with the router configuration,
+		 * for instance when a router was configured in the
+		 * BOOTP reply, but the TFTP server was on the same
+		 * subnet. So this is probably a warning that your
+		 * configuration might be wrong. But I'm not really
+		 * sure if there aren't any other situations.
+		 *
+		 * Simon Glass <sjg@chromium.org>: We get an ICMP when
+		 * we send a tftp packet to a dead connection, or when
+		 * there is no server at the other end.
+		 */
+		if (ip->ip_p == IPPROTO_ICMP) {
+			//XXX checkout the comment from Simon Glass above
+			//receive_icmp(ip, len, src_ip, et);
+			print_format("ICMP received ... probably tftp ureachable\n\r");
+			return;
+		} else if (ip->ip_p != IPPROTO_UDP) {	/* Only UDP packets */
+			return;
+		}
+#ifdef NET_DEBUG
+		print_format("received UDP (to=%x, from=%x, len=%d)\n",
+			   dst_ip, src_ip, len);
+#endif
+
+//XXX hardware checksum enough ??
+#ifdef CONFIG_UDP_CHECKSUM
+		if (ip->udp_xsum != 0) {
+			unsigned long   xsum;
+			unsigned short *sumptr;
+			unsigned short  sumlen;
+
+			xsum  = ip->ip_p;
+			xsum += (ntohs(ip->udp_len));
+			xsum += (ntohl(ip->ip_src.s_addr) >> 16) & 0x0000ffff;
+			xsum += (ntohl(ip->ip_src.s_addr) >>  0) & 0x0000ffff;
+			xsum += (ntohl(ip->ip_dst.s_addr) >> 16) & 0x0000ffff;
+			xsum += (ntohl(ip->ip_dst.s_addr) >>  0) & 0x0000ffff;
+
+			sumlen = ntohs(ip->udp_len);
+			sumptr = (unsigned short *)&(ip->udp_src);
+
+			while (sumlen > 1) {
+				unsigned short sumdata;
+
+				sumdata = *sumptr++;
+				xsum += ntohs(sumdata);
+				sumlen -= 2;
+			}
+			if (sumlen > 0) {
+				unsigned short sumdata;
+
+				sumdata = *(unsigned char *)sumptr;
+				sumdata = (sumdata << 8) & 0xff00;
+				xsum += sumdata;
+			}
+			while ((xsum >> 16) != 0) {
+				xsum = (xsum & 0x0000ffff) +
+				       ((xsum >> 16) & 0x0000ffff);
+			}
+			if ((xsum != 0x00000000) && (xsum != 0x0000ffff)) {
+				print_format(" UDP wrong checksum %x %x\n\r",
+				       xsum, ntohs(ip->udp_xsum));
+				return;
+			}
+		}
+#endif
+
+		/*
+		 * IP header OK.  Pass the packet to the current handler.
+		 */
+		(*udp_packet_handler)((unsigned char *)ip + IP_UDP_HDR_SIZE,
+				      ntohs(ip->udp_dst),
+				      src_ip,
+				      ntohs(ip->udp_src),
+				      ntohs(ip->udp_len) - UDP_HDR_SIZE);
+		break;
 		default:
 			print_format("I promise to never, ever happen :-)\n\r");
 	}
@@ -516,7 +654,7 @@ int net_send_udp_packet(unsigned char *ether, struct in_addr dest, int dport, in
 
 	/* if MAC address was not discovered yet, do an ARP request */
 	if (memcmp(ether, net_null_ethaddr, 6) == 0) {
-		print_format("sending ARP for 0x%xI4\n\r",dest.s_addr);
+		print_format("sending ARP for 0x%x\n\r",dest.s_addr);
 
 		/* save the ip and eth addr for the packet to send after arp */
 		net_arp_wait_packet_ip = dest;
@@ -651,29 +789,6 @@ void net_set_udp_header(unsigned char *pkt, struct in_addr dest, int dport, int 
 	ip->udp_xsum = 0;
 }
 
-unsigned compute_ip_checksum(const void *vptr, unsigned nbytes)
-{
-	int sum, oddbyte;
-	const unsigned short *ptr = vptr;
-
-	sum = 0;
-	while (nbytes > 1) {
-		sum += *ptr++;
-		nbytes -= 2;
-	}
-	if (nbytes == 1) {
-		oddbyte = 0;
-		((uint8_t *)&oddbyte)[0] = *(uint8_t *)ptr;
-		((uint8_t *)&oddbyte)[1] = 0;
-		sum += oddbyte;
-	}
-	sum = (sum >> 16) + (sum & 0xffff);
-	sum += (sum >> 16);
-	sum = ~sum & 0xffff;
-
-	return sum;
-}
-
 
 static void dummy_handler(unsigned char *pkt, unsigned dport,
 			struct in_addr sip, unsigned sport,
@@ -687,7 +802,7 @@ rxhand_f *net_get_udp_handler(void)
 }
 void net_set_udp_handler(rxhand_f *f)
 {
-	print_format("--- net_loop UDP handler set \n\r", f);
+	print_format("--- net_loop UDP handler set \n\r");
 	if (f == NULL)
 		udp_packet_handler = dummy_handler;
 	else
@@ -703,6 +818,6 @@ void net_set_timeout_handler(unsigned long iv, thand_f *f)
 		print_format("--- net_loop timeout handler set\n\r");
 		time_handler = f;
 		time_start = get_timer(0);
-		time_delta = iv/1000; // timeout in milliseconds/1000
+		time_delta = iv; // timeout in milliseconds/1000
 	}
 }

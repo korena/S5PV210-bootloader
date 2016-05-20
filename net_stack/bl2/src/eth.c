@@ -27,7 +27,7 @@ int eth_register(struct eth_device *dev)
 
 int eth_init(void)
 {
-	if (!eth_current || (eth_current->state != ETH_STATE_ACTIVE))
+	if (!eth_current || (eth_current->state == ETH_STATE_ACTIVE))
 		return;
 	if(eth_current->init(eth_current) == 0){
 		eth_current->state = ETH_STATE_ACTIVE;
