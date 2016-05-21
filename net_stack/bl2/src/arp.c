@@ -140,7 +140,9 @@ void arp_receive(struct ethernet_hdr *et, struct ip_udp_hdr *ip, int len)
 	 *   address; so if we receive such a packet, we set
 	 *   the server ethernet address
 	 */
+#ifdef ARP_DEBUG
 	print_format("Got ARP\n\r");
+#endif
 	arp = (struct arp_hdr *)ip;
 	if (len < ARP_HDR_SIZE) {
 		print_format("bad length %d < %d\n\r", len, ARP_HDR_SIZE);

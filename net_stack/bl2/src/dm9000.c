@@ -571,8 +571,8 @@ static int dm9000_rx(struct eth_device *netdev)
 		}
 
 		if (rxbyte != DM9000_PKT_RDY){
-			print_format("no packets received\n\r");
 #ifdef CONFIG_DM9000_DEBUG
+			print_format("no packets received\n\r");
 			dm9000_dump_regs();
 #endif
 			return 0; /* No packet received, ignore */
@@ -625,7 +625,8 @@ static int dm9000_rx(struct eth_device *netdev)
 			//	DM9000_DMP_PACKET(__func__ , rdptr, RxLen);
 	//		DM9000_DBG("passing packet to upper layer\n\r");
 //			dm9000_dump_eth_frame(rdptr,RxLen);
-			return RxLen;
+			net_process_received_packet(net_rx_packets[0], RxLen);
+		//	return RxLen;
 		}
 	}
 	return 0;

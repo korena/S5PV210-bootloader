@@ -274,8 +274,8 @@ start_linux(void)
 //		udelay(1000000);
 //	}
 	print_format("fetching kernel ... \n\r");
-//	net_loop(TFTPGET);
-	net_loop(ARP);
+	net_loop(TFTPGET);
+//	net_loop(ARP);
 	print_format("kernel loaded to RAM ...\n\r");
     	debug_print("setting up ATAGS ...\n\r");
 

@@ -12,7 +12,7 @@
 
 
 
-#define NET_DEBUG
+//#define NET_DEBUG
 
 
 static unsigned char net_pkt_buf[(PKTBUFSRX+1) * PKTSIZE_ALIGN + PKTALIGN];
@@ -286,7 +286,6 @@ restart:
 	print_format("looping and polling ethernet recv ...\n\r");
 	int ethStatus ;
 	for (;;) {
-
 		/*
 		 *	Check the ethernet for a new packet.  The ethernet
 		 *	receive routine will process it.
@@ -359,7 +358,9 @@ void net_process_received_packet(unsigned char *in_packet, int len)
 		       vlanid = VLAN_NONE, 
 		       myvlanid, 
 		       mynvlanid; 
+#ifdef NET_DEBUG
 	print_format("packet received\n\r"); 
+#endif
 	net_rx_packet = in_packet; 
 	net_rx_packet_len = len; 
 	et = (struct ethernet_hdr *)in_packet;
@@ -473,7 +474,9 @@ void net_process_received_packet(unsigned char *in_packet, int len)
 			arp_receive(et, ip, len);
 			break;
 		case PROT_IP:
+#ifdef NET_DEBUG
 		uart_print("Got IP\n\r");
+#endif
 		/* Before we start poking the header, make sure it is there */
 		if (len < IP_UDP_HDR_SIZE) {
 #ifdef NET_DEBUG
@@ -620,8 +623,8 @@ void net_process_received_packet(unsigned char *in_packet, int len)
 				      ntohs(ip->udp_src),
 				      ntohs(ip->udp_len) - UDP_HDR_SIZE);
 		break;
-		default:
-			print_format("I promise to never, ever happen :-)\n\r");
+		//default:
+//			print_format("I promise to never, ever happen :-)\n\r");
 	}
 
 }
@@ -654,7 +657,9 @@ int net_send_udp_packet(unsigned char *ether, struct in_addr dest, int dport, in
 
 	/* if MAC address was not discovered yet, do an ARP request */
 	if (memcmp(ether, net_null_ethaddr, 6) == 0) {
+#ifdef NET_DEBUG
 		print_format("sending ARP for 0x%x\n\r",dest.s_addr);
+#endif
 
 		/* save the ip and eth addr for the packet to send after arp */
 		net_arp_wait_packet_ip = dest;
@@ -669,7 +674,9 @@ int net_send_udp_packet(unsigned char *ether, struct in_addr dest, int dport, in
 		arp_request();
 		return 1;	/* waiting */
 	} else {
+#ifdef NET_DEBUG
 		print_format("sending UDP to 0x%xI4\n\r",dest.s_addr);
+#endif
 		net_send_packet(net_tx_packet, pkt_hdr_size + payload_len);
 		return 0;	/* transmitted */
 	}
@@ -802,7 +809,9 @@ rxhand_f *net_get_udp_handler(void)
 }
 void net_set_udp_handler(rxhand_f *f)
 {
+#ifdef NET_DEBUG
 	print_format("--- net_loop UDP handler set \n\r");
+#endif
 	if (f == NULL)
 		udp_packet_handler = dummy_handler;
 	else
@@ -815,7 +824,9 @@ void net_set_timeout_handler(unsigned long iv, thand_f *f)
 		print_format("--- net_loop timeout handler cancelled\n\r");
 		time_handler = (thand_f *)0;
 	} else {
+#ifdef NET_DEBUG
 		print_format("--- net_loop timeout handler set\n\r");
+#endif
 		time_handler = f;
 		time_start = get_timer(0);
 		time_delta = iv; // timeout in milliseconds/1000

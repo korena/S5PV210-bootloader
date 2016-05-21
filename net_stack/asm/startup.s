@@ -247,8 +247,8 @@ flash_led:
      bic r5,r5,r0
      str r5,[r4]
      mov r1, #0x10000  @ this should be passed meh!
-1:  subs r1, r1, #1
-  bne 1b
+1:   subs r1, r1, #1
+     bne 1b
      orr r5,r5,r3  @ turn them all off again ...
      str r5,[r4]
      mov pc, lr

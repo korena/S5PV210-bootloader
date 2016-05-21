@@ -21,12 +21,12 @@
 
 
 
-#define TFTP_DEBUG 1
+#define TFTP_DEBUG 0
 
 /* Well known TFTP port # */
 #define WELL_KNOWN_PORT	69
 /* Millisecs to timeout for lost pkt */
-#define TIMEOUT		20000UL
+#define TIMEOUT		60000UL
 #ifndef	CONFIG_NET_RETRY_COUNT
 /* # of timeouts before giving up */
 # define TIMEOUT_COUNT	10
@@ -173,7 +173,7 @@ static void show_block_marker(void)
 #endif
 	{
 		if (((tftp_cur_block - 1) % 10) == 0)
-			uart_print_string("#",1);
+			print_format("... ");
 		else if ((tftp_cur_block % (10 * HASHES_PER_LINE)) == 0)
 			uart_print("\n\r\t "); // not really gonna work :-)
 	}
@@ -227,11 +227,9 @@ static void tftp_complete(void)
 #endif
 	time_start = get_timer(time_start);
 	if (time_start > 0) {
-		uart_print_string("\n\r\t ",4);	/* Line up with "Loading: " */
-		print_format("rate: ",net_boot_file_size /
-			time_start * 1000);
+		print_format("\n\r\trate: %d bytes in %d milliseconds",net_boot_file_size , time_start);
 	}
-	uart_print("\n\rdone\n\r");
+	uart_print("\tdone\n\r");
 	net_set_state(NETLOOP_SUCCESS);
 }
 
@@ -402,6 +400,9 @@ static void tftp_handler(unsigned char *pkt, uint32_t dest, struct in_addr sip,
 			return;
 		len -= 2;
 		tftp_cur_block = ntohs(*(uint16_t *)pkt);  //XXX changed from __be16 type
+#if TFTP_DEBUG
+		print_format("Block Number %d, previous block %d\n\r",tftp_cur_block,tftp_prev_block);
+#endif
 		update_block_number();
 		if (tftp_state == STATE_SEND_RRQ)
 #if TFTP_DEBUG
@@ -517,7 +518,7 @@ void tftp_start(enum proto_t protocol)
 
 	uart_print("Using ");
 	uart_print_string(eth_get_name(),strlen(eth_get_name()));
-	uart_print( "Device\n\r");
+	uart_print( " Device\n\r");
 	print_format("TFTP from server 0x%x; our IP address is 0x%x",
 	       tftp_remote_ip, net_ip);
 	/* Check if we need to send across this subnet */
@@ -531,7 +532,7 @@ void tftp_start(enum proto_t protocol)
 			print_format("; sending through gateway 0x%xI4\n\r", net_gateway);
 	}
 
-	uart_print("Filename '");
+	uart_print("\n\rFilename '");
 	uart_print_string(tftp_filename,strlen(tftp_filename));
 	uart_print("'.\n\r");
 	if (net_boot_file_expected_size_in_blocks) {
