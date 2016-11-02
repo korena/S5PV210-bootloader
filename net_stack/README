@@ -1,10 +1,5 @@
-This is a personal project I am working on for the purpose of demonstration,
-it is basically a car-dashboard built atop an ARM Cortex-A8 based development board.
-
-The focus of this project is on low level interfacing and software stack build up (u-boot and linux).
-The code progresses along side a blog series that I committed to finishing at:
-
-https://info.siphyc.com/tag/poking-arm-cortex-a8/
-
-The progress of this series is governed by the availability of free time, and a lot of the decisions and choices made in this code are sub-optimal, so if you think of copying any portion of this code, and using it in a production system,
-then be ready to deal with a high probability of crashing and burning, possibly killing living things.
+# S5PV210 (Cortex-A8 based SoC from Samsung) system bring up
+1. Linux, bare metal networking, and whatever comes.
+2. The focus of this project is on using documentaion, fetching information, porting stuff, initializing chips ...
+3. This project is not focussing on "efficient design" (plain old cowboy coding .. learn, but don't copy!)
+4. It's extremely slow going, time is not so easy to find these days :-)
