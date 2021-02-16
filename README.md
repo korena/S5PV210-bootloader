@@ -3,3 +3,6 @@
 2. The focus of this project is on using documentaion, fetching information, porting stuff, initializing chips ...
 3. This project is not focussing on "efficient design" (plain old cowboy coding .. learn, but don't copy!)
 4. It's extremely slow going, time is not so easy to find these days :-)
+
+actual process explained at https://blog.korena.xyz/tag/poking-arm-cortex-a8
+
